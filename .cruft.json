@@ -1,0 +1,17 @@
+{
+  "template": "https://github.com/ecmwf-projects/cookiecutter-conda-package",
+  "commit": "1aa18a8a5a32f1eed6ff09e4a2fd5c6ac51342d6",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "project_name": "cads-worker",
+      "project_slug": "cads_worker",
+      "project_short_description": "Utility functions for CADS Dask worker",
+      "copyright_holder": "European Union",
+      "copyright_year": "2022",
+      "mypy_strict": "True",
+      "_template": "https://github.com/ecmwf-projects/cookiecutter-conda-package"
+    }
+  },
+  "directory": null
+}
