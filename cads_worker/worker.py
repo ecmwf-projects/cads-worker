@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import urllib.parse
 from typing import Any
 
 
@@ -25,9 +24,6 @@ def submit_workflow(
     logging.info(f"Submitting: {metadata['process_id']}")
     results = eval(f"{entry_point}(metadata=metadata, **kwargs)")
     results = json.loads(cacholote.encode.dumps(results))
-    results["href"] = urllib.parse.urljoin(
-        os.environ["PUBLIC_PROJECT_URL"],
-        f"{os.environ['STORAGE_API_PATH']}/{results['file:local_path']}",
-    )
+    results["href"] = f"{os.environ['STORAGE_API_URL']}/{results['file:local_path']}"
     results["xarray:storage_options"] = {}
-    return results
+    return json.dumps(results)
