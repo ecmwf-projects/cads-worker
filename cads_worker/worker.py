@@ -18,7 +18,7 @@ def submit_workflow(
     logging.info(f"Submitting: {metadata['process_id']}")
     # cache key is computed from function name and kwargs, we add 'setup_code' to kwargs so functions
     # with the same name and with different setup_code have different caches
-    metadata["setup_code"] = setup_code
+    kwargs.setdefault("config", {})["__setup_code__"] = setup_code
     func = eval(entry_point)
     with cacholote.config.set(
         cache_files_urlpath=f"s3://{os.environ['CACHE_BUCKET']}",
