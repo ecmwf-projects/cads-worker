@@ -39,7 +39,6 @@ def submit_workflow(
         )
         cwd = os.getcwd()
         results_dir = os.path.join(tempfile.gettempdir(), cache_key)
-        cwd = os.getcwd()
         # wait for the running process that is writing in the results_dir
         while os.path.exists(results_dir):
             time.sleep(2)
