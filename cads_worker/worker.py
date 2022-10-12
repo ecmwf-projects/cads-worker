@@ -31,14 +31,13 @@ else:
 @contextlib.contextmanager
 def temporary_working_directory(path: str) -> Iterator[None]:
     origin = os.getcwd()
+    os.mkdir(path)
     try:
-        os.mkdir(path)
         os.chdir(path)
         yield
     finally:
         os.chdir(origin)
-        if os.path.exists(path):
-            shutil.rmtree(path)
+        shutil.rmtree(path)
 
 
 def submit_workflow(
