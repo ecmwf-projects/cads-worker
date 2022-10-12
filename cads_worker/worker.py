@@ -37,6 +37,7 @@ def submit_workflow(
             func, metadata=metadata, **kwargs
         )
         results_dir = os.path.join(tempfile.gettempdir(), cache_key)
+        cwd = os.getcwd()
         # wait for the running process that is writing in the results_dir
         while os.path.exists(results_dir):
             time.sleep(2)
@@ -45,6 +46,7 @@ def submit_workflow(
         try:
             func(metadata=metadata, **kwargs)
         finally:
+            os.chdir(cwd)
             shutil.rmtree(results_dir)
         cache_dict = json.loads(cacholote.config.SETTINGS["cache_store"][cache_key])
     public_dict = {
