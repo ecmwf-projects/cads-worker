@@ -32,6 +32,7 @@ else:
 def temporary_working_directory(path: str) -> Iterator[None]:
     origin = os.getcwd()
     try:
+        os.mkdir(path)
         os.chdir(path)
         yield
     finally:
