@@ -30,12 +30,14 @@ def submit_workflow(
             key=os.environ["STORAGE_ADMIN"],
             secret=os.environ["STORAGE_PASSWORD"],
             client_kwargs={"endpoint_url": os.environ["OBJECT_STORAGE_URL"]},
+            asynchronous=False,
         ),
-        io_delete_original=True,
+        io_delete_original=True, raise_all_encoding_errors=True
     ):
         cache_key = cacholote.hexdigestify_python_call(
             func, metadata=metadata, **kwargs
         )
+        cwd = os.getcwd()
         results_dir = os.path.join(tempfile.gettempdir(), cache_key)
         # wait for the running process that is writing in the results_dir
         while os.path.exists(results_dir):
@@ -45,6 +47,7 @@ def submit_workflow(
         try:
             func(metadata=metadata, **kwargs)
         finally:
+            os.chdir(cwd)
             shutil.rmtree(results_dir)
         cache_dict = json.loads(cacholote.config.SETTINGS["cache_store"][cache_key])
     public_dict = {
