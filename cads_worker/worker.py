@@ -29,13 +29,15 @@ else:
 
 
 @contextlib.contextmanager
-def change_working_directory(path: str) -> Iterator[None]:
+def temporary_working_directory(path: str) -> Iterator[None]:
     origin = os.getcwd()
     try:
         os.chdir(path)
         yield
     finally:
         os.chdir(origin)
+        if os.path.exists(path):
+            shutil.rmtree(path)
 
 
 def submit_workflow(
@@ -56,11 +58,8 @@ def submit_workflow(
     # wait for the running process that is writing in the results_dir
     while os.path.exists(results_dir):
         time.sleep(2)
-    with change_working_directory(results_dir):
-        try:
-            func(metadata=metadata, **kwargs)
-        finally:
-            shutil.rmtree(results_dir)
+    with temporary_working_directory(results_dir):
+        func(metadata=metadata, **kwargs)
     cache_dict = json.loads(cacholote.config.SETTINGS["cache_store"][cache_key])
     public_dict = {
         k: {} if k.endswith(":storage_options") else v for k, v in cache_dict.items()
