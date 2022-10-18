@@ -16,6 +16,7 @@ def submit_workflow(
     metadata: dict[str, Any] = {},
 ) -> str:
     import cacholote
+    import sqlalchemy.orm
 
     exec(setup_code, globals())
     logging.info(f"Submitting: {kwargs}")
@@ -32,7 +33,8 @@ def submit_workflow(
             client_kwargs={"endpoint_url": os.environ["OBJECT_STORAGE_URL"]},
             asynchronous=False,
         ),
-        io_delete_original=True, raise_all_encoding_errors=True
+        io_delete_original=True,
+        raise_all_encoding_errors=True,
     ):
         cache_key = cacholote.hexdigestify_python_call(
             func, metadata=metadata, **kwargs
@@ -49,8 +51,12 @@ def submit_workflow(
         finally:
             os.chdir(cwd)
             shutil.rmtree(results_dir)
-        cache_dict = json.loads(cacholote.config.SETTINGS["cache_store"][cache_key])
-    public_dict = {
-        k: {} if k.endswith(":storage_options") else v for k, v in cache_dict.items()
-    }
-    return json.dumps(public_dict)
+
+        with sqlalchemy.orm.Session(cacholote.config.SETTINGS["engine"]) as session:
+            cached_args = (
+                session.query(cacholote.config.CacheEntry.result["args"].as_json())
+                .filter(cacholote.config.CacheEntry.key == cache_key)
+                .one()[0]
+            )
+
+    return json.dumps(cached_args[0])
