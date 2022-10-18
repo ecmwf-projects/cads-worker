@@ -52,11 +52,4 @@ def submit_workflow(
             os.chdir(cwd)
             shutil.rmtree(results_dir)
 
-        with sqlalchemy.orm.Session(cacholote.config.SETTINGS["engine"]) as session:
-            cached_args = (
-                session.query(cacholote.config.CacheEntry.result["args"].as_json())
-                .filter(cacholote.config.CacheEntry.key == cache_key)
-                .one()[0]
-            )
-
-    return json.dumps(cached_args[0])
+    return cache_key
