@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import shutil
@@ -16,7 +15,6 @@ def submit_workflow(
     metadata: dict[str, Any] = {},
 ) -> str:
     import cacholote
-    import sqlalchemy.orm
 
     exec(setup_code, globals())
     logging.info(f"Submitting: {kwargs}")
@@ -35,6 +33,9 @@ def submit_workflow(
         ),
         io_delete_original=True,
         raise_all_encoding_errors=True,
+        cache_db_urlpath=f"postgresql://{os.environ['COMPUTE_DB_USER']}"
+        f":{os.environ['COMPUTE_DB_PASSWORD']}@{os.environ['COMPUTE_DB_HOST']}"
+        f"/{os.environ['COMPUTE_DB_NAME']}",
     ):
         cache_key = cacholote.hexdigestify_python_call(
             func, metadata=metadata, **kwargs
