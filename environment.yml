@@ -12,4 +12,5 @@ dependencies:
 - sphinx
 - sphinx-autoapi
 # DO NOT EDIT ABOVE THIS LINE, ADD DEPENDENCIES BELOW
-- pip
+- pip:
+  - git+https://+https://github.com/ecmwf-projects/cacholote
