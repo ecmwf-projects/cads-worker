@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import shutil
@@ -32,7 +31,11 @@ def submit_workflow(
             client_kwargs={"endpoint_url": os.environ["OBJECT_STORAGE_URL"]},
             asynchronous=False,
         ),
-        io_delete_original=True, raise_all_encoding_errors=True
+        io_delete_original=True,
+        raise_all_encoding_errors=True,
+        cache_db_urlpath=f"postgresql://{os.environ['COMPUTE_DB_USER']}"
+        f":{os.environ['COMPUTE_DB_PASSWORD']}@{os.environ['COMPUTE_DB_HOST']}"
+        f"/{os.environ['COMPUTE_DB_USER']}",
     ):
         cache_key = cacholote.hexdigestify_python_call(
             func, metadata=metadata, **kwargs
@@ -49,8 +52,5 @@ def submit_workflow(
         finally:
             os.chdir(cwd)
             shutil.rmtree(results_dir)
-        cache_dict = json.loads(cacholote.config.SETTINGS["cache_store"][cache_key])
-    public_dict = {
-        k: {} if k.endswith(":storage_options") else v for k, v in cache_dict.items()
-    }
-    return json.dumps(public_dict)
+
+    return cache_key
