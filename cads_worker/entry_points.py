@@ -5,10 +5,9 @@ import cacholote
 import typer
 
 
-app = typer.Typer()
+# app = typer.Typer()
 
 
-@app.command()
 def cache_cleaner():
     with cacholote.config.set(
         cache_files_urlpath=f"s3://{os.environ['CACHE_BUCKET']}",
@@ -27,8 +26,12 @@ def cache_cleaner():
     ):
         while True:
             print(os.getcwd())
-            cacholote.cleaner.clean_cache_files(
-                max_size=os.environ.get("MAX_SIZE", 200_000_000),
+            cacholote.clean.clean_cache_files(
+                maxsize=os.environ.get("MAX_SIZE", 200_000_000),
                 method=os.environ.get("METHOD", "LRU"),
             )
             time.sleep(1)
+
+
+def main():
+    typer.run(cache_cleaner())
