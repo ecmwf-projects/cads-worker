@@ -7,5 +7,3 @@ dependencies:
 - pytest-cov
 # DO NOT EDIT ABOVE THIS LINE, ADD DEPENDENCIES BELOW
 - typer
-- pip:
-  - git+https://github.com/ecmwf-projects/cacholote
