@@ -17,7 +17,7 @@ def cache_cleaner():
         raise_all_encoding_errors=True,
         cache_db_urlpath=f"postgresql://{os.environ['COMPUTE_DB_USER']}"
         f":{os.environ['COMPUTE_DB_PASSWORD']}@{os.environ['COMPUTE_DB_HOST']}"
-        f"/{os.environ['COMPUTE_DB_NAME']}",
+        f"/{os.environ['COMPUTE_DB_USER']}",
     ):
         while True:
             print(os.getcwd())
