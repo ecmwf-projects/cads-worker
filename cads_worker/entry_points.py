@@ -5,9 +5,6 @@ import cacholote
 import typer
 
 
-# app = typer.Typer()
-
-
 def cache_cleaner():
     with cacholote.config.set(
         cache_files_urlpath=f"s3://{os.environ['CACHE_BUCKET']}",
