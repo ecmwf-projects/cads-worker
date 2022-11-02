@@ -53,4 +53,4 @@ def submit_workflow(
             os.chdir(cwd)
             shutil.rmtree(results_dir)
 
-    return cache_key
+    return cacholote.cache.LAST_PRIMARY_KEYS
