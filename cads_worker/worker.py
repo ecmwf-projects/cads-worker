@@ -42,6 +42,8 @@ def submit_workflow(
         )
         cwd = os.getcwd()
         results_dir = os.path.join(tempfile.gettempdir(), cache_key)
+        if cacholote.config.SETTINGS["expiration"]:
+            results_dir += "_" + cacholote.config.SETTINGS["expiration"]
         # wait for the running process that is writing in the results_dir
         while os.path.exists(results_dir):
             time.sleep(2)
