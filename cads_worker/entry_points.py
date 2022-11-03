@@ -1,5 +1,5 @@
-import os
 import logging
+import os
 import time
 
 import cacholote
@@ -28,8 +28,8 @@ def cache_cleaner():
                     maxsize=os.environ.get("MAX_SIZE", 200_000_000),
                     method=os.environ.get("METHOD", "LRU"),
                 )
-            except:
-                logging.exception('cache_cleaner crashed')
+            except Exception as ex:
+                logging.exception(f"cache_cleaner crashed: {ex!r}")
             time.sleep(0.1)
 
 
