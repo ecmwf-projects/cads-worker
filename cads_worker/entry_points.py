@@ -17,6 +17,7 @@ def cache_cleaner() -> None:
             use_listings_cache=False,
             skip_instance_cache=False,
         ),
+        delete_unknown_files=True,
         raise_all_encoding_errors=True,
         cache_db_urlpath=f"postgresql://{os.environ['COMPUTE_DB_USER']}"
         f":{os.environ['COMPUTE_DB_PASSWORD']}@{os.environ['COMPUTE_DB_HOST']}"
