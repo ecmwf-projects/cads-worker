@@ -1,8 +1,6 @@
 import logging
 import os
-import shutil
 import tempfile
-import time
 from typing import Any
 
 logging.basicConfig(level=logging.INFO)
@@ -37,20 +35,12 @@ def submit_workflow(
         f":{os.environ['COMPUTE_DB_PASSWORD']}@{os.environ['COMPUTE_DB_HOST']}"
         f"/{os.environ['COMPUTE_DB_USER']}",
     ):
-        cache_key = cacholote.hexdigestify_python_call(
-            func, metadata=metadata, **kwargs
-        )
         cwd = os.getcwd()
-        results_dir = os.path.join(tempfile.gettempdir(), cache_key)
-        # wait for the running process that is writing in the results_dir
-        while os.path.exists(results_dir):
-            time.sleep(2)
-        os.mkdir(results_dir)
-        os.chdir(results_dir)
-        try:
-            func(metadata=metadata, **kwargs)
-        finally:
-            os.chdir(cwd)
-            shutil.rmtree(results_dir)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            os.chdir(tmpdir)
+            try:
+                func(metadata=metadata, **kwargs)
+            finally:
+                os.chdir(cwd)
 
     return cacholote.cache.LAST_PRIMARY_KEYS
