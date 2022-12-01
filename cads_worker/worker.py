@@ -21,8 +21,8 @@ def submit_workflow(
     kwargs.setdefault("config", {})["__setup_code__"] = setup_code
     func = eval(entry_point)
     with cacholote.config.set(
-        cache_files_urlpath=f"s3://{os.environ['CACHE_BUCKET']}/{os.environ['NAMESPACE']}",
-        cache_files_urlpath_readonly=f"{os.environ['STORAGE_API_URL'].rstrip('/')}/{os.environ['CACHE_BUCKET']}/{os.environ['NAMESPACE']}",
+        cache_files_urlpath=f"s3://{os.environ['CACHE_BUCKET']}",
+        cache_files_urlpath_readonly=f"{os.environ['STORAGE_API_URL'].rstrip('/')}/{os.environ['CACHE_BUCKET']}",
         cache_files_storage_options=dict(
             key=os.environ["STORAGE_ADMIN"],
             secret=os.environ["STORAGE_PASSWORD"],
