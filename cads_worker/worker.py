@@ -1,3 +1,4 @@
+import contextvars
 import logging
 import os
 import tempfile
@@ -35,12 +36,13 @@ def submit_workflow(
         f":{os.environ['COMPUTE_DB_PASSWORD']}@{os.environ['COMPUTE_DB_HOST']}"
         f"/{os.environ['COMPUTE_DB_USER']}",
     ):
+        ctx = contextvars.copy_context()
         cwd = os.getcwd()
         with tempfile.TemporaryDirectory() as tmpdir:
             os.chdir(tmpdir)
             try:
-                func(metadata=metadata, **kwargs)
+                ctx.run(func, metadata=metadata, **kwargs)
             finally:
                 os.chdir(cwd)
 
-    return cacholote.cache.LAST_PRIMARY_KEYS
+    return ctx[cacholote.cache.LAST_PRIMARY_KEYS]
