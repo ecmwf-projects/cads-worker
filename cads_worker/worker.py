@@ -12,7 +12,7 @@ def _submit_workflow(
     entry_point: str,
     kwargs: dict[str, Any],
     metadata: dict[str, Any],
-) -> None:
+) -> str:
     import cacholote
 
     exec(setup_code, globals())
@@ -46,7 +46,7 @@ def _submit_workflow(
             finally:
                 os.chdir(cwd)
 
-        return cacholote.cache.LAST_PRIMARY_KEYS.get()
+    return cacholote.cache.LAST_PRIMARY_KEYS.get()
 
 
 def submit_workflow(
