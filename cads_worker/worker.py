@@ -55,6 +55,5 @@ def submit_workflow(
     kwargs: dict[str, Any] = {},
     metadata: dict[str, Any] = {},
 ) -> str:
-
     ctx = contextvars.copy_context()
     return ctx.run(_submit_workflow, setup_code, entry_point, kwargs, metadata)
