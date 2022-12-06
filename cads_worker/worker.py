@@ -12,7 +12,7 @@ def _submit_workflow(
     entry_point: str,
     kwargs: dict[str, Any],
     metadata: dict[str, Any],
-) -> str:
+) -> dict[str, Any]:
     import cacholote
 
     exec(setup_code, globals())
@@ -54,6 +54,6 @@ def submit_workflow(
     entry_point: str,
     kwargs: dict[str, Any] = {},
     metadata: dict[str, Any] = {},
-) -> str:
+) -> dict[str, Any]:
     ctx = contextvars.copy_context()
     return ctx.run(_submit_workflow, setup_code, entry_point, kwargs, metadata)
