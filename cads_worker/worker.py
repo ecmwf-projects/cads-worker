@@ -7,12 +7,12 @@ from typing import Any
 logging.basicConfig(level=logging.INFO)
 
 
-def submit_workflow(
+def _submit_workflow(
     setup_code: str,
     entry_point: str,
     kwargs: dict[str, Any] = {},
     metadata: dict[str, Any] = {},
-) -> str:
+) -> None:
     import cacholote
 
     exec(setup_code, globals())
@@ -38,13 +38,23 @@ def submit_workflow(
         f":{os.environ['COMPUTE_DB_PASSWORD']}@{os.environ['COMPUTE_DB_HOST']}"
         f"/{os.environ['COMPUTE_DB_USER']}",
     ):
-        ctx = contextvars.copy_context()
         cwd = os.getcwd()
         with tempfile.TemporaryDirectory() as tmpdir:
             os.chdir(tmpdir)
             try:
-                ctx.run(func, metadata=metadata, **kwargs)
+                func(metadata=metadata, **kwargs)
             finally:
                 os.chdir(cwd)
 
+
+def submit_workflow(
+    setup_code: str,
+    entry_point: str,
+    kwargs: dict[str, Any] = {},
+    metadata: dict[str, Any] = {},
+) -> str:
+    import cacholote
+
+    ctx = contextvars.copy_context()
+    ctx.run(_submit_workflow)
     return ctx[cacholote.cache.LAST_PRIMARY_KEYS]
