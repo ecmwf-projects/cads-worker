@@ -10,8 +10,8 @@ logging.basicConfig(level=logging.INFO)
 def _submit_workflow(
     setup_code: str,
     entry_point: str,
-    kwargs: dict[str, Any] = {},
-    metadata: dict[str, Any] = {},
+    kwargs: dict[str, Any],
+    metadata: dict[str, Any],
 ) -> None:
     import cacholote
 
@@ -46,6 +46,8 @@ def _submit_workflow(
             finally:
                 os.chdir(cwd)
 
+        return cacholote.cache.LAST_PRIMARY_KEYS.get()
+
 
 def submit_workflow(
     setup_code: str,
@@ -53,8 +55,6 @@ def submit_workflow(
     kwargs: dict[str, Any] = {},
     metadata: dict[str, Any] = {},
 ) -> str:
-    import cacholote
 
     ctx = contextvars.copy_context()
-    ctx.run(_submit_workflow)
-    return ctx[cacholote.cache.LAST_PRIMARY_KEYS]
+    return ctx.run(_submit_workflow, setup_code, entry_point, kwargs, metadata)
