@@ -7,11 +7,11 @@ from typing import Any
 logging.basicConfig(level=logging.INFO)
 
 
-def _submit_workflow(
+def submit_workflow(
     setup_code: str,
     entry_point: str,
-    kwargs: dict[str, Any],
-    metadata: dict[str, Any],
+    kwargs: dict[str, Any] = {},
+    metadata: dict[str, Any] = {},
 ) -> dict[str, Any]:
     import cacholote
 
@@ -42,18 +42,8 @@ def _submit_workflow(
         with tempfile.TemporaryDirectory() as tmpdir:
             os.chdir(tmpdir)
             try:
-                func(metadata=metadata, **kwargs)
+                func(contextvars.copy_context(), metadata=metadata, **kwargs)
             finally:
                 os.chdir(cwd)
 
     return cacholote.cache.LAST_PRIMARY_KEYS.get()
-
-
-def submit_workflow(
-    setup_code: str,
-    entry_point: str,
-    kwargs: dict[str, Any] = {},
-    metadata: dict[str, Any] = {},
-) -> dict[str, Any]:
-    ctx = contextvars.copy_context()
-    return ctx.run(_submit_workflow, setup_code, entry_point, kwargs, metadata)
