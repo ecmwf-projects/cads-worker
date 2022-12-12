@@ -42,7 +42,9 @@ def submit_workflow(
         with tempfile.TemporaryDirectory() as tmpdir:
             os.chdir(tmpdir)
             try:
-                func(contextvars.copy_context(), metadata=metadata, **kwargs)
+                func(
+                    metadata=metadata, **kwargs, __context__=contextvars.copy_context()
+                )
             finally:
                 os.chdir(cwd)
 
