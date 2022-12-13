@@ -1,7 +1,6 @@
+import datetime
 import logging
 import os
-import time
-from datetime import datetime
 
 import cacholote
 import typer
@@ -23,16 +22,14 @@ def _cache_cleaner() -> None:
         f":{os.environ['COMPUTE_DB_PASSWORD']}@{os.environ['COMPUTE_DB_HOST']}"
         f"/{os.environ['COMPUTE_DB_USER']}",
     ):
-        logging.warning(
-            f"Running cache cleaner {datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')}"
-        )
+        logging.warning("Running cache cleaner: %s", datetime.datetime.now())
         try:
             cacholote.clean_cache_files(
                 maxsize=int(os.environ.get("MAX_SIZE", 200_000_000)),
                 method=os.environ.get("METHOD", "LRU"),  # type: ignore[arg-type] # let cacholote handle it
             )
-        except Exception as ex:
-            logging.exception(f"cache_cleaner crashed: {ex!r}")
+        except Exception:
+            logging.exception("cache_cleaner crashed")
 
 
 def cache_cleaner() -> None:
