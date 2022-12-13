@@ -7,7 +7,7 @@ import cacholote
 import typer
 
 
-def cache_cleaner() -> None:
+def _cache_cleaner() -> None:
     with cacholote.config.set(
         cache_files_urlpath=f"s3://{os.environ['CACHE_BUCKET']}",
         cache_files_storage_options=dict(
@@ -35,5 +35,5 @@ def cache_cleaner() -> None:
             logging.exception(f"cache_cleaner crashed: {ex!r}")
 
 
-def main() -> None:
-    typer.run(cache_cleaner)
+def cache_cleaner() -> None:
+    typer.run(_cache_cleaner)
