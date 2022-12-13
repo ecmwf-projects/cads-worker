@@ -28,12 +28,12 @@ def cache_cleaner() -> None:
         )
         try:
             cacholote.clean_cache_files(
-                maxsize=os.environ.get("MAX_SIZE", 200_000_000),
-                method=os.environ.get("METHOD", "LRU"),
+                maxsize=int(os.environ.get("MAX_SIZE", 200_000_000)),
+                method=os.environ.get("METHOD", "LRU"),  # type: ignore[arg-type] # let cacholote handle it
             )
         except Exception as ex:
             logging.exception(f"cache_cleaner crashed: {ex!r}")
 
 
 def main() -> None:
-    typer.run(cache_cleaner())
+    typer.run(cache_cleaner)
