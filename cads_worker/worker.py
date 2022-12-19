@@ -1,3 +1,4 @@
+import contextvars
 import logging
 import os
 import tempfile
@@ -11,7 +12,7 @@ def submit_workflow(
     entry_point: str,
     kwargs: dict[str, Any] = {},
     metadata: dict[str, Any] = {},
-) -> str:
+) -> dict[str, Any]:
     import cacholote
 
     exec(setup_code, globals())
@@ -22,7 +23,9 @@ def submit_workflow(
     func = eval(entry_point)
     with cacholote.config.set(
         cache_files_urlpath=f"s3://{os.environ['CACHE_BUCKET']}",
-        cache_files_urlpath_readonly=f"{os.environ['STORAGE_API_URL'].rstrip('/')}/{os.environ['CACHE_BUCKET']}",
+        cache_files_urlpath_readonly=(
+            f"{os.environ['STORAGE_API_URL'].rstrip('/')}/{os.environ['CACHE_BUCKET']}"
+        ),
         cache_files_storage_options=dict(
             key=os.environ["STORAGE_ADMIN"],
             secret=os.environ["STORAGE_PASSWORD"],
@@ -39,8 +42,10 @@ def submit_workflow(
         with tempfile.TemporaryDirectory() as tmpdir:
             os.chdir(tmpdir)
             try:
-                func(metadata=metadata, **kwargs)
+                func(
+                    metadata=metadata, **kwargs, __context__=contextvars.copy_context()
+                )
             finally:
                 os.chdir(cwd)
 
-    return cacholote.cache.LAST_PRIMARY_KEYS
+    return cacholote.cache.LAST_PRIMARY_KEYS.get()
