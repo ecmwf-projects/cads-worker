@@ -2,6 +2,13 @@
 
 Utility functions for CADS Dask worker
 
+## Quick Start
+
+```python
+>>> import cads_worker
+
+```
+
 ## Workflow for developers/contributors
 
 For best experience create a new conda environment (e.g. DEVELOP) with Python 3.10:
