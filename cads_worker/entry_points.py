@@ -7,10 +7,7 @@ import typer
 
 
 def _cache_cleaner(loglevel: str = "INFO") -> None:
-    numeric_level = getattr(logging, loglevel.upper(), None)
-    if not isinstance(numeric_level, int):
-        raise ValueError(f"Invalid log level: {loglevel!r}")
-    logging.basicConfig(level=numeric_level)
+    logging.basicConfig(level=loglevel)
 
     logging.info("Running cache cleaner: %s", datetime.datetime.now())
     try:
