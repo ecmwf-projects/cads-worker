@@ -6,8 +6,13 @@ import cacholote
 import typer
 
 
-def _cache_cleaner() -> None:
-    logging.warning("Running cache cleaner: %s", datetime.datetime.now())
+def _cache_cleaner(loglevel: str = "INFO") -> None:
+    numeric_level = getattr(logging, loglevel.upper(), None)
+    if not isinstance(numeric_level, int):
+        raise ValueError(f"Invalid log level: {loglevel!r}")
+    logging.basicConfig(level=numeric_level)
+
+    logging.info("Running cache cleaner: %s", datetime.datetime.now())
     try:
         cacholote.clean_cache_files(
             maxsize=int(os.environ.get("MAX_SIZE", 1_000_000_000)),
