@@ -1,5 +1,6 @@
 import json
 import logging
+import sys
 from typing import Any, Callable, Mapping, MutableMapping
 
 import structlog
@@ -37,6 +38,8 @@ def configure_logger() -> None:
     """
     logging.basicConfig(
         level=logging.INFO,
+        format="%(message)s",
+        stream=sys.stdout,
     )
 
     structlog.configure(
