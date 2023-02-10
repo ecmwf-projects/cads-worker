@@ -1,5 +1,4 @@
 import contextvars
-import logging
 import os
 import tempfile
 from typing import Any
