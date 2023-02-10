@@ -4,7 +4,13 @@ import os
 import tempfile
 from typing import Any
 
-logging.basicConfig(level=logging.INFO)
+import structlog
+
+from . import config
+
+config.configure_logger()
+
+LOGGER = structlog.get_logger(__name__)
 
 
 def submit_workflow(
@@ -16,7 +22,7 @@ def submit_workflow(
     import cacholote
 
     exec(setup_code, globals())
-    logging.info(f"Submitting: {kwargs}")
+    LOGGER.info(f"Submitting: {kwargs}")
     # cache key is computed from function name and kwargs, we add 'setup_code' to kwargs so functions
     # with the same name and with different setup_code have different caches
     kwargs.setdefault("config", {})["__setup_code__"] = setup_code
