@@ -2,9 +2,8 @@ import contextvars
 import os
 import tempfile
 from typing import Any
+
 import distributed.worker
-
-
 import structlog
 
 from . import config
