@@ -31,6 +31,10 @@ branch = true
 [tool.mypy]
 strict = true
 
+[[tool.mypy.overrides]]
+implicit_reexport = true
+module = "distributed.worker"
+
 [tool.ruff]
 # Black line length is 88, but black does not format comments.
 line-length = 110
