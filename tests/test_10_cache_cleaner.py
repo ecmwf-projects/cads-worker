@@ -22,9 +22,13 @@ def test_cache_cleaner(tmp_path: pathlib.Path) -> None:
 
     # clean cache
     old_environ = dict(os.environ)
-    os.environ["MAX_SIZE"] = "0"
-    os.environ["CACHOLOTE_CACHE_DB_URLPATH"] = cache_db_urlpath
-    os.environ["CACHOLOTE_CACHE_FILES_URLPATH"] = cache_files_urlpath
+    os.environ.update(
+        {
+            "MAX_SIZE": "0",
+            "CACHOLOTE_CACHE_DB_URLPATH": cache_db_urlpath,
+            "CACHOLOTE_CACHE_FILES_URLPATH": cache_files_urlpath,
+        }
+    )
     try:
         subprocess.run("cache-cleaner", check=True)
     finally:
