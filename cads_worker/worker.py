@@ -3,6 +3,7 @@ import os
 import tempfile
 from typing import Any
 
+import distributed.worker
 import structlog
 
 from . import config
@@ -21,7 +22,8 @@ def submit_workflow(
     import cacholote
 
     exec(setup_code, globals())
-    LOGGER.info(f"Submitting: {kwargs}")
+    job_id = distributed.worker.thread_state.key
+    LOGGER.info(f"Submitting: {job_id}.", job_id=job_id)
     # cache key is computed from function name and kwargs, we add 'setup_code' to kwargs so functions
     # with the same name and with different setup_code have different caches
     kwargs.setdefault("config", {})["__setup_code__"] = setup_code
@@ -31,6 +33,9 @@ def submit_workflow(
         os.chdir(tmpdir)
         try:
             func(metadata=metadata, **kwargs, __context__=contextvars.copy_context())
+        except Exception:
+            LOGGER.exception(job_id=job_id)
+            raise
         finally:
             os.chdir(cwd)
 
