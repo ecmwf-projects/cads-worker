@@ -12,7 +12,7 @@ def test_cache_cleaner(tmp_path: pathlib.Path) -> None:
 
     # copy file to cache
     cached_open = cacholote.cacheable(open)
-    cache_db_urlpath = "sqlite:///" + str(tmp_path / "cacholote.db")
+    cache_db_urlpath = f"sqlite:///{tmp_path / 'cacholote.db'}"
     cache_files_urlpath = str(tmp_path / "cache_files")
     with cacholote.config.set(
         cache_db_urlpath=cache_db_urlpath, cache_files_urlpath=cache_files_urlpath
