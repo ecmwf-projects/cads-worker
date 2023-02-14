@@ -23,7 +23,7 @@ def submit_workflow(
 
     exec(setup_code, globals())
     job_id = distributed.worker.thread_state.key
-    LOGGER.info(f"Submitting: {job_id}.", job_id=job_id)
+    LOGGER.info(f"Processing job: {job_id}.", job_id=job_id)
     # cache key is computed from function name and kwargs, we add 'setup_code' to kwargs so functions
     # with the same name and with different setup_code have different caches
     kwargs.setdefault("config", {})["__setup_code__"] = setup_code
