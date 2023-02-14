@@ -1,0 +1,34 @@
+import os
+import pathlib
+import subprocess
+
+import cacholote
+
+
+def test_cache_cleaner(tmp_path: pathlib.Path) -> None:
+    # create dummy file
+    dummy_path = tmp_path / "dummy.txt"
+    dummy_path.write_text("dummy")
+
+    # copy file to cache
+    cached_open = cacholote.cacheable(open)
+    cache_db_urlpath = "sqlite:///" + str(tmp_path / "cacholote.db")
+    cache_files_urlpath = str(tmp_path / "cache_files")
+    with cacholote.config.set(
+        cache_db_urlpath=cache_db_urlpath, cache_files_urlpath=cache_files_urlpath
+    ):
+        cached_path = pathlib.Path(cached_open(dummy_path).name)
+    assert cached_path.exists()
+
+    # clean cache
+    old_environ = dict(os.environ)
+    os.environ["MAX_SIZE"] = "0"
+    os.environ["CACHOLOTE_CACHE_DB_URLPATH"] = cache_db_urlpath
+    os.environ["CACHOLOTE_CACHE_FILES_URLPATH"] = cache_files_urlpath
+    try:
+        subprocess.run("cache-cleaner", check=True)
+    finally:
+        os.environ.clear()
+        os.environ.update(old_environ)
+
+    assert not cached_path.exists()
