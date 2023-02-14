@@ -21,18 +21,14 @@ def test_cache_cleaner(tmp_path: pathlib.Path) -> None:
     assert cached_path.exists()
 
     # clean cache
-    old_environ = dict(os.environ)
-    os.environ.update(
+    cache_env = os.environ.copy()
+    cache_env.update(
         {
             "MAX_SIZE": "0",
             "CACHOLOTE_CACHE_DB_URLPATH": cache_db_urlpath,
             "CACHOLOTE_CACHE_FILES_URLPATH": cache_files_urlpath,
         }
     )
-    try:
-        subprocess.run("cache-cleaner", check=True)
-    finally:
-        os.environ.clear()
-        os.environ.update(old_environ)
+    subprocess.run("cache-cleaner", check=True, env=cache_env)
 
     assert not cached_path.exists()
