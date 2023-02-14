@@ -30,5 +30,4 @@ def test_cache_cleaner(tmp_path: pathlib.Path) -> None:
         }
     )
     subprocess.run("cache-cleaner", check=True, env=cache_env)
-
     assert not cached_path.exists()
