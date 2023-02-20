@@ -1,8 +1,8 @@
-import contextvars
 import os
 import tempfile
 from typing import Any
 
+import cacholote
 import distributed.worker
 import structlog
 
@@ -19,8 +19,6 @@ def submit_workflow(
     kwargs: dict[str, Any] = {},
     metadata: dict[str, Any] = {},
 ) -> int:
-    import cacholote
-
     exec(setup_code, globals())
     job_id = distributed.worker.thread_state.key  # type: ignore
     LOGGER.info(f"Processing job: {job_id}.", job_id=job_id)
@@ -33,9 +31,7 @@ def submit_workflow(
         os.chdir(tmpdir)
         try:
             with cacholote.config.set(return_cache_entry=True):
-                result = func(
-                    metadata=metadata, **kwargs, __context__=contextvars.copy_context()
-                )
+                result = func(metadata=metadata, **kwargs)
         except Exception:
             LOGGER.exception(job_id=job_id)
             raise
