@@ -32,11 +32,13 @@ def submit_workflow(
     with tempfile.TemporaryDirectory() as tmpdir:
         os.chdir(tmpdir)
         try:
-            func(metadata=metadata, **kwargs, __context__=contextvars.copy_context())
+            result = func(
+                metadata=metadata, **kwargs, __context__=contextvars.copy_context()
+            )
         except Exception:
             LOGGER.exception(job_id=job_id)
             raise
         finally:
             os.chdir(cwd)
 
-    return cacholote.cache.LAST_PRIMARY_KEYS.get()
+    return result._primary_keys()
