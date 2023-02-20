@@ -21,7 +21,7 @@ def submit_workflow(
 ) -> dict[str, Any]:
     import cacholote
 
-    cacholote.config.set({"return_cache_entry": True})
+    cacholote.config.set(return_cache_entry=True)
 
     exec(setup_code, globals())
     job_id = distributed.worker.thread_state.key
