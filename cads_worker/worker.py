@@ -13,8 +13,6 @@ config.configure_logger()
 
 LOGGER = structlog.get_logger(__name__)
 
-cacholote.config.set(return_cache_entry=True)
-
 
 def submit_workflow(
     setup_code: str,
@@ -33,9 +31,10 @@ def submit_workflow(
     with tempfile.TemporaryDirectory() as tmpdir:
         os.chdir(tmpdir)
         try:
-            result = func(
-                metadata=metadata, **kwargs, __context__=contextvars.copy_context()
-            )
+            with cacholote.config.set(return_cache_entry=True):
+                result = func(
+                    metadata=metadata, **kwargs, __context__=contextvars.copy_context()
+                )
         except Exception:
             LOGGER.exception(job_id=job_id)
             raise
