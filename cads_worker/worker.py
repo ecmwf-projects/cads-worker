@@ -8,6 +8,7 @@ import structlog
 
 from . import config
 
+cacholote.config.set(return_cache_entry=True)
 config.configure_logger()
 
 LOGGER = structlog.get_logger(__name__)
@@ -30,8 +31,7 @@ def submit_workflow(
     with tempfile.TemporaryDirectory() as tmpdir:
         os.chdir(tmpdir)
         try:
-            with cacholote.config.set(return_cache_entry=True):
-                result = func(metadata=metadata, **kwargs)
+            result = func(metadata=metadata, **kwargs)
         except Exception:
             LOGGER.exception(job_id=job_id)
             raise
