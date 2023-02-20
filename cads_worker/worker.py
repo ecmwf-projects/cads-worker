@@ -43,4 +43,4 @@ def submit_workflow(
         finally:
             os.chdir(cwd)
 
-    return result._primary_keys()
+    return result._primary_keys
