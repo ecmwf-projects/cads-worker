@@ -3,7 +3,6 @@ import os
 import tempfile
 from typing import Any
 
-import cacholote
 import distributed.worker
 import structlog
 
@@ -20,6 +19,8 @@ def submit_workflow(
     kwargs: dict[str, Any] = {},
     metadata: dict[str, Any] = {},
 ) -> dict[str, Any]:
+    import cacholote
+
     exec(setup_code, globals())
     job_id = distributed.worker.thread_state.key
     LOGGER.info(f"Processing job: {job_id}.", job_id=job_id)
