@@ -18,11 +18,11 @@ def submit_workflow(
     entry_point: str,
     kwargs: dict[str, Any] = {},
     metadata: dict[str, Any] = {},
-) -> dict[str, Any]:
+) -> int:
     import cacholote
 
     exec(setup_code, globals())
-    job_id = distributed.worker.thread_state.key
+    job_id = distributed.worker.thread_state.key  # type: ignore
     LOGGER.info(f"Processing job: {job_id}.", job_id=job_id)
     # cache key is computed from function name and kwargs, we add 'setup_code' to kwargs so functions
     # with the same name and with different setup_code have different caches
@@ -42,4 +42,4 @@ def submit_workflow(
         finally:
             os.chdir(cwd)
 
-    return result._primary_keys
+    return result.id  # type: ignore
