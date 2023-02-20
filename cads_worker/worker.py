@@ -3,6 +3,7 @@ import os
 import tempfile
 from typing import Any
 
+import cacholote
 import distributed.worker
 import structlog
 
@@ -12,6 +13,8 @@ config.configure_logger()
 
 LOGGER = structlog.get_logger(__name__)
 
+cacholote.config.set(return_cache_entry=True)
+
 
 def submit_workflow(
     setup_code: str,
@@ -19,10 +22,6 @@ def submit_workflow(
     kwargs: dict[str, Any] = {},
     metadata: dict[str, Any] = {},
 ) -> dict[str, Any]:
-    import cacholote
-
-    cacholote.config.set(return_cache_entry=True)
-
     exec(setup_code, globals())
     job_id = distributed.worker.thread_state.key
     LOGGER.info(f"Processing job: {job_id}.", job_id=job_id)
