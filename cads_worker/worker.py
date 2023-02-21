@@ -2,13 +2,11 @@ import os
 import tempfile
 from typing import Any
 
-import cacholote
 import distributed.worker
 import structlog
 
 from . import config
 
-cacholote.config.set(return_cache_entry=True)
 config.configure_logger()
 
 LOGGER = structlog.get_logger(__name__)
