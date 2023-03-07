@@ -31,7 +31,7 @@ def submit_workflow(
     with tempfile.TemporaryDirectory() as tmpdir:
         os.chdir(tmpdir)
         try:
-            result = adaptor.retrieve(request=request)
+            result = cacholote.cacheable(adaptor.retrieve)(request=request)
         except Exception:
             LOGGER.exception(job_id=job_id)
             raise
