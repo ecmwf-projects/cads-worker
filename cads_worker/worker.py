@@ -5,6 +5,8 @@ from typing import Any
 import cacholote  # noqa: F401
 import distributed.worker
 import structlog
+from cads_adaptors import adaptor_utils
+
 
 from . import config
 
@@ -14,23 +16,23 @@ LOGGER = structlog.get_logger(__name__)
 
 
 def submit_workflow(
-    setup_code: str,
     entry_point: str,
+    setup_code: str | None = None,
     kwargs: dict[str, Any] = {},
     metadata: dict[str, Any] = {},
 ) -> int:
-    exec(setup_code, globals())
     job_id = distributed.worker.thread_state.key  # type: ignore
     LOGGER.info(f"Processing job: {job_id}.", job_id=job_id)
-    # cache key is computed from function name and kwargs, we add 'setup_code' to kwargs so functions
-    # with the same name and with different setup_code have different caches
-    kwargs.setdefault("config", {})["__setup_code__"] = setup_code
-    func = eval(entry_point)
+    form = kwargs.get("form", {})
+    config = kwargs.get("config", {})
+    request = kwargs.get("request", {})
+    adaptor_class = adaptor_utils.get_adaptor_class(entry_point, setup_code)
+    adaptor = adaptor_class(form=form, **config)
     cwd = os.getcwd()
     with tempfile.TemporaryDirectory() as tmpdir:
         os.chdir(tmpdir)
         try:
-            result = func(metadata=metadata, **kwargs)
+            result = cacholote.cacheable(adaptor.retrieve)(request=request)
         except Exception:
             LOGGER.exception(job_id=job_id)
             raise
