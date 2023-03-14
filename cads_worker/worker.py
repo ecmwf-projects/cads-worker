@@ -5,7 +5,6 @@ from typing import Any
 import cacholote  # noqa: F401
 import distributed.worker
 import structlog
-from cads_adaptors import adaptor_utils
 
 
 from . import config
@@ -21,6 +20,8 @@ def submit_workflow(
     kwargs: dict[str, Any] = {},
     metadata: dict[str, Any] = {},
 ) -> int:
+    from cads_adaptors import adaptor_utils
+
     job_id = distributed.worker.thread_state.key  # type: ignore
     LOGGER.info(f"Processing job: {job_id}.", job_id=job_id)
     form = kwargs.get("form", {})
