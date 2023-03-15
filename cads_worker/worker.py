@@ -23,7 +23,7 @@ def submit_workflow(
     from cads_adaptors import adaptor_utils
 
     job_id = distributed.worker.thread_state.key  # type: ignore
-    LOGGER.info(f"Processing job: {job_id}.", job_id=job_id)
+    LOGGER.info("Processing job", job_id=job_id)
     form = kwargs.get("form", {})
     config = kwargs.get("config", {})
     request = kwargs.get("request", {})
