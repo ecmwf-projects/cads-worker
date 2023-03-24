@@ -11,10 +11,12 @@ LOGGER = structlog.get_logger(__name__)
 
 
 def _cache_cleaner() -> None:
-    LOGGER.info("Running cache cleaner")
+    max_size = int(os.environ.get("MAX_SIZE", 1_000_000_000))
+    cache_bucket = os.environ.get("CACHE_BUCKET", None)
+    LOGGER.info("Running cache cleaner", max_size=max_size, cache_bucket=cache_bucket)
     try:
         cacholote.clean_cache_files(
-            maxsize=int(os.environ.get("MAX_SIZE", 1_000_000_000)),
+            maxsize=max_size,
             method=os.environ.get("METHOD", "LRU"),  # type: ignore[arg-type] # let cacholote handle it
             logger=LOGGER,
             delete_unknown_files=bool(os.environ.get("DELETE_UNKNOWN_FILES", 1)),
