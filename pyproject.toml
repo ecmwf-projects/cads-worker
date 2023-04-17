@@ -15,6 +15,7 @@ classifiers = [
 dependencies = [
   "cacholote",
   "cads_adaptors",
+  "cads-common",
   "distributed",
   "structlog",
   "typer"
