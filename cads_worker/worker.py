@@ -6,7 +6,6 @@ import cacholote  # noqa: F401
 import distributed.worker
 import structlog
 
-
 from . import config
 
 config.configure_logger()

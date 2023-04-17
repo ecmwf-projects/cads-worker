@@ -20,7 +20,9 @@ def _cache_cleaner() -> None:
             method=os.environ.get("METHOD", "LRU"),  # type: ignore[arg-type] # let cacholote handle it
             logger=LOGGER,
             delete_unknown_files=bool(os.environ.get("DELETE_UNKNOWN_FILES", 1)),
-            lock_validity_period=float(os.environ.get("LOCK_VALIDITY_PERIOD", 60 * 60 * 24))
+            lock_validity_period=float(
+                os.environ.get("LOCK_VALIDITY_PERIOD", 60 * 60 * 24)
+            ),
         )
     except Exception:
         LOGGER.exception("cache_cleaner crashed")

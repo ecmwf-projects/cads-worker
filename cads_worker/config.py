@@ -1,7 +1,3 @@
-import logging
-import sys
-
-import structlog
 import cads_common.logging
 
 
