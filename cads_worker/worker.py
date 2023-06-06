@@ -2,16 +2,16 @@ import os
 import tempfile
 from typing import Any
 
-import cacholote  # noqa: F401
+import cacholote
 import distributed.worker
 import structlog
-
 
 from . import config
 
 config.configure_logger()
 
 LOGGER = structlog.get_logger(__name__)
+cacholote.config.set(logger=LOGGER)
 
 
 def submit_workflow(
