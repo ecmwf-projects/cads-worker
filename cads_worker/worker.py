@@ -22,6 +22,7 @@ def submit_workflow(
 ) -> int:
     from cads_adaptors import adaptor_utils
 
+    structlog.contextvars.bind_contextvars(event_type="DATASET_COMPUTE")
     job_id = distributed.worker.thread_state.key  # type: ignore
     LOGGER.info("Processing job", job_id=job_id)
     form = kwargs.get("form", {})
