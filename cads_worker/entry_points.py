@@ -8,6 +8,7 @@ from . import config
 
 config.configure_logger()
 LOGGER = structlog.get_logger(__name__)
+cacholote.config.set(logger=LOGGER)
 
 
 def _cache_cleaner() -> None:
@@ -18,9 +19,10 @@ def _cache_cleaner() -> None:
         cacholote.clean_cache_files(
             maxsize=max_size,
             method=os.environ.get("METHOD", "LRU"),  # type: ignore[arg-type] # let cacholote handle it
-            logger=LOGGER,
             delete_unknown_files=bool(os.environ.get("DELETE_UNKNOWN_FILES", 1)),
-            lock_validity_period=float(os.environ.get("LOCK_VALIDITY_PERIOD", 60 * 60 * 24))
+            lock_validity_period=float(
+                os.environ.get("LOCK_VALIDITY_PERIOD", 60 * 60 * 24)
+            ),
         )
     except Exception:
         LOGGER.exception("cache_cleaner crashed")
