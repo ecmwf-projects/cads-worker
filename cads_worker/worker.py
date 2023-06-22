@@ -20,7 +20,7 @@ def submit_workflow(
     kwargs: dict[str, Any] = {},
     metadata: dict[str, Any] = {},
 ) -> int:
-    from cads_adaptors import adaptor_utils
+    from cads_adaptors.tools import adaptor_tools
 
     job_id = distributed.worker.thread_state.key  # type: ignore
     structlog.contextvars.bind_contextvars(event_type="DATASET_COMPUTE", job_id=job_id)
@@ -28,7 +28,7 @@ def submit_workflow(
     form = kwargs.get("form", {})
     config = kwargs.get("config", {})
     request = kwargs.get("request", {})
-    adaptor_class = adaptor_utils.get_adaptor_class(entry_point, setup_code)
+    adaptor_class = adaptor_tools.get_adaptor_class(entry_point, setup_code)
     adaptor = adaptor_class(form=form, **config)
     cwd = os.getcwd()
     with tempfile.TemporaryDirectory() as tmpdir:
