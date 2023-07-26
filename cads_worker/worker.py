@@ -17,9 +17,7 @@ cacholote.config.set(logger=LOGGER)
 def submit_workflow(
     entry_point: str,
     setup_code: str | None = None,
-    request: dict[str, Any] = {},
-    config: dict[str, Any] = {},
-    form: dict[str, Any] = {},
+    kwargs: dict[str, Any] = {},
     metadata: dict[str, Any] = {},
 ) -> int:
     import cads_adaptors
@@ -27,6 +25,9 @@ def submit_workflow(
     job_id = distributed.worker.thread_state.key  # type: ignore
     structlog.contextvars.bind_contextvars(event_type="DATASET_COMPUTE", job_id=job_id)
     LOGGER.info("Processing job", job_id=job_id)
+    form = kwargs.get("form", {})
+    config = kwargs.get("config", {})
+    request = kwargs.get("request", {})
     adaptor_class = cads_adaptors.get_adaptor_class(entry_point, setup_code)
     adaptor = adaptor_class(form=form, **config)
     cwd = os.getcwd()
