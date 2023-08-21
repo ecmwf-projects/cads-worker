@@ -2,10 +2,9 @@ import os
 import tempfile
 from typing import Any
 
+import cacholote
 import distributed.worker
 import structlog
-
-import cacholote
 
 from . import config
 
@@ -30,12 +29,14 @@ def submit_workflow(
     LOGGER.info("Processing job", job_id=job_id)
     adaptor_class = cads_adaptors.get_adaptor_class(entry_point, setup_code)
     adaptor = adaptor_class(form=form, **config)
-    context = cads_adaptors.adaptor.Context()
+    context = cads_adaptors.Context()
     cwd = os.getcwd()
     with tempfile.TemporaryDirectory() as tmpdir:
         os.chdir(tmpdir)
         try:
-            result = cacholote.cacheable(adaptor.retrieve)(request=request, context=context)
+            result = cacholote.cacheable(adaptor.retrieve)(
+                request=request, context=context
+            )
         except Exception:
             distributed.worker.get_worker().log_event(topic=job_id, msg=context.stdout)
             LOGGER.info(context.stdout, job_id=job_id)
