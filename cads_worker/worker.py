@@ -29,22 +29,30 @@ def submit_workflow(
     LOGGER.info("Processing job", job_id=job_id)
     adaptor_class = cads_adaptors.get_adaptor_class(entry_point, setup_code)
     adaptor = adaptor_class(form=form, **config)
-    context = cads_adaptors.Context()
     cwd = os.getcwd()
     with tempfile.TemporaryDirectory() as tmpdir:
         os.chdir(tmpdir)
         try:
-            result = cacholote.cacheable(adaptor.retrieve)(
-                request=request, context=context
-            )
+            result = cacholote.cacheable(adaptor.retrieve)(request=request)
         except Exception:
-            distributed.worker.get_worker().log_event(topic=job_id, msg=context.stdout)
-            LOGGER.info(context.stdout, job_id=job_id)
-            LOGGER.exception(job_id=job_id)
+            distributed.worker.get_worker().log_event(
+                topic=f"{job_id}/log", msg=adaptor.context.stdout + adaptor.context.stderr
+            )
+            distributed.worker.get_worker().log_event(
+                topic=f"{job_id}/user_visible_log", msg=adaptor.context.user_visible_log
+            )
+            LOGGER.info(adaptor.context.stdout, event_type="STDOUT", job_id=job_id)
+            LOGGER.info(adaptor.context.stderr, event_type="STDERR", job_id=job_id)
+            LOGGER.exception(job_id=job_id, event_type="EXCEPTION")
             raise
         finally:
             os.chdir(cwd)
 
-    distributed.worker.get_worker().log_event(topic=job_id, msg=context.stdout)
-    LOGGER.info(context.stdout, job_id=job_id)
+    distributed.worker.get_worker().log_event(
+        topic=f"{job_id}/log", msg=adaptor.context.stdout + adaptor.context.stderr
+    )
+    distributed.worker.get_worker().log_event(
+        topic=f"{job_id}/user_visible_log", msg=adaptor.context.user_visible_log
+    )
+    LOGGER.info(adaptor.context.stdout, event_type="STDOUT", job_id=job_id)
     return result.id  # type: ignore
