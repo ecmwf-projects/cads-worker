@@ -36,7 +36,8 @@ def submit_workflow(
             result = cacholote.cacheable(adaptor.retrieve)(request=request)
         except Exception:
             distributed.worker.get_worker().log_event(
-                topic=f"{job_id}/log", msg=adaptor.context.stdout + adaptor.context.stderr
+                topic=f"{job_id}/log",
+                msg=adaptor.context.stdout + adaptor.context.stderr,
             )
             distributed.worker.get_worker().log_event(
                 topic=f"{job_id}/user_visible_log", msg=adaptor.context.user_visible_log
