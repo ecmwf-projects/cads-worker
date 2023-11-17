@@ -6,6 +6,7 @@ dependencies:
 - make
 - mypy
 - myst-parser
+- pip
 - pre-commit
 - pydata-sphinx-theme
 - pytest
@@ -16,3 +17,4 @@ dependencies:
 - pip
 - pip:
   - git+https://github.com/ecmwf-projects/cacholote
+  - git+https://github.com/ecmwf-projects/cads-adaptors
