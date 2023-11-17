@@ -15,7 +15,7 @@ classifiers = [
 ]
 dependencies = [
   "cacholote",
-  "cads_adaptors",
+  "cads-adaptors@git+https://github.com/ecmwf-projects/cads-adaptors.git",
   "distributed",
   "structlog",
   "typer"
@@ -34,6 +34,12 @@ branch = true
 
 [tool.mypy]
 strict = true
+
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = [
+  "cads_adaptors.*"
+]
 
 [tool.ruff]
 ignore = [
