@@ -7,7 +7,7 @@ dependencies:
 - pytest
 - pytest-cov
 # DO NOT EDIT ABOVE THIS LINE, ADD DEPENDENCIES BELOW
-- distributed
+- distributed==2022.11.1
 - pip
 - pip:
   - git+https://github.com/ecmwf-projects/cacholote
