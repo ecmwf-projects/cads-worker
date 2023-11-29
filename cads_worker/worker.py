@@ -55,5 +55,7 @@ def submit_workflow(
     distributed.worker.get_worker().log_event(
         topic=f"{job_id}/user_visible_log", msg=adaptor.context.user_visible_log
     )
+    fs, _ = cacholote.utils.get_cache_files_fs_dirname()
+    fs.chmod(result.result["args"][0]["file:local_path"], acl="public-read")
     LOGGER.info(adaptor.context.stdout, event_type="STDOUT", job_id=job_id)
     return result.id  # type: ignore
