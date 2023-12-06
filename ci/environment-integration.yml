@@ -12,7 +12,6 @@ dependencies:
 - cloudpickle==2.2.1
 - msgpack-python==1.0.5
 - tornado==6.2
-- pip
 - pip:
   - git+https://github.com/ecmwf-projects/cacholote
   - git+https://github.com/ecmwf-projects/cads-adaptors
