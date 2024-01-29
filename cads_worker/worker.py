@@ -1,7 +1,9 @@
 import os
 import tempfile
+import socket
 from typing import Any
 
+from cads_broker import database
 import cacholote
 import distributed.worker
 import structlog
@@ -25,21 +27,29 @@ def submit_workflow(
     import cads_adaptors
 
     job_id = distributed.worker.thread_state.key  # type: ignore
+    with database.ensure_session_obj(None)() as session:
+        database.add_event(
+            event_type="worker_name",
+            request_uid=job_id,
+            message=socket.gethostname(),
+            session=session,
+        )
     structlog.contextvars.bind_contextvars(event_type="DATASET_COMPUTE", job_id=job_id)
     LOGGER.info("Processing job", job_id=job_id)
     adaptor_class = cads_adaptors.get_adaptor_class(entry_point, setup_code)
     adaptor = adaptor_class(form=form, **config)
     cwd = os.getcwd()
+    worker = distributed.worker.get_worker()
     with tempfile.TemporaryDirectory() as tmpdir:
         os.chdir(tmpdir)
         try:
             result = cacholote.cacheable(adaptor.retrieve)(request=request)
         except Exception:
-            distributed.worker.get_worker().log_event(
+            worker.log_event(
                 topic=f"{job_id}/log",
                 msg=adaptor.context.stdout + adaptor.context.stderr,
             )
-            distributed.worker.get_worker().log_event(
+            worker.log_event(
                 topic=f"{job_id}/user_visible_log", msg=adaptor.context.user_visible_log
             )
             LOGGER.info(adaptor.context.stdout, event_type="STDOUT", job_id=job_id)
@@ -49,10 +59,10 @@ def submit_workflow(
         finally:
             os.chdir(cwd)
 
-    distributed.worker.get_worker().log_event(
+    worker.log_event(
         topic=f"{job_id}/log", msg=adaptor.context.stdout + adaptor.context.stderr
     )
-    distributed.worker.get_worker().log_event(
+    worker.log_event(
         topic=f"{job_id}/user_visible_log", msg=adaptor.context.user_visible_log
     )
     fs, _ = cacholote.utils.get_cache_files_fs_dirname()
