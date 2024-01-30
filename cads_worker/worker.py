@@ -1,12 +1,12 @@
 import os
-import tempfile
 import socket
+import tempfile
 from typing import Any
 
-from cads_broker import database
 import cacholote
 import distributed.worker
 import structlog
+from cads_broker import database
 
 from . import config
 
