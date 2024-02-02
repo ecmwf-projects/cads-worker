@@ -4,9 +4,9 @@ import tempfile
 from typing import Any
 
 import cacholote
+import cads_broker.database
 import distributed.worker
 import structlog
-from cads_broker import database
 
 from . import config
 
@@ -15,6 +15,32 @@ config.configure_logger()
 LOGGER = structlog.get_logger(__name__)
 cacholote.config.set(logger=LOGGER)
 
+
+class Context:
+    def __init__(self, job_id: str, logger: Any):
+        self.job_id = job_id
+        self.logger = logger
+
+    def add_user_visible_log(self, message: str, session: Any) -> None:
+        cads_broker.database.add_event(
+            event_type="user_visible_log", request_uid=self.job_id, message=message, session=session
+        )
+
+    def add_stdout(self, message: str, session: Any) -> None:
+        self.logger.info(message)
+        cads_broker.database.add_event(
+            event_type="stdout", request_uid=self.job_id, message=message, session=session
+        )
+
+    def add_stderr(self, message: str, session: Any) -> None:
+        self.logger.exception(message)
+        cads_broker.database.add_event(
+            event_type="stderr", request_uid=self.job_id, message=message, session=session
+        )
+
+    def session_maker(self) -> Any:
+        return cads_broker.database.ensure_session_obj(None)()
+    
 
 def submit_workflow(
     entry_point: str,
@@ -27,45 +53,29 @@ def submit_workflow(
     import cads_adaptors
 
     job_id = distributed.worker.thread_state.key  # type: ignore
-    with database.ensure_session_obj(None)() as session:
-        database.add_event(
+    logger = LOGGER.bind(job_id=job_id)
+    with cads_broker.database.ensure_session_obj(None)() as session:
+        cads_broker.database.add_event(
             event_type="worker_name",
             request_uid=job_id,
             message=socket.gethostname(),
             session=session,
         )
     structlog.contextvars.bind_contextvars(event_type="DATASET_COMPUTE", job_id=job_id)
-    LOGGER.info("Processing job", job_id=job_id)
+    logger.info("Processing job", job_id=job_id)
     adaptor_class = cads_adaptors.get_adaptor_class(entry_point, setup_code)
-    adaptor = adaptor_class(form=form, **config)
+    adaptor = adaptor_class(form=form, context=Context(job_id=job_id, logger=logger), **config)
     cwd = os.getcwd()
-    worker = distributed.worker.get_worker()
     with tempfile.TemporaryDirectory() as tmpdir:
         os.chdir(tmpdir)
         try:
             result = cacholote.cacheable(adaptor.retrieve)(request=request)
         except Exception:
-            worker.log_event(
-                topic=f"{job_id}/log",
-                msg=adaptor.context.stdout + adaptor.context.stderr,
-            )
-            worker.log_event(
-                topic=f"{job_id}/user_visible_log", msg=adaptor.context.user_visible_log
-            )
-            LOGGER.info(adaptor.context.stdout, event_type="STDOUT", job_id=job_id)
-            LOGGER.info(adaptor.context.stderr, event_type="STDERR", job_id=job_id)
-            LOGGER.exception(job_id=job_id, event_type="EXCEPTION")
+            logger.exception(job_id=job_id, event_type="EXCEPTION")
             raise
         finally:
             os.chdir(cwd)
 
-    worker.log_event(
-        topic=f"{job_id}/log", msg=adaptor.context.stdout + adaptor.context.stderr
-    )
-    worker.log_event(
-        topic=f"{job_id}/user_visible_log", msg=adaptor.context.user_visible_log
-    )
     fs, _ = cacholote.utils.get_cache_files_fs_dirname()
     fs.chmod(result.result["args"][0]["file:local_path"], acl="public-read")
-    LOGGER.info(adaptor.context.stdout, event_type="STDOUT", job_id=job_id)
     return result.id  # type: ignore
