@@ -26,6 +26,11 @@ class Context:
             event_type="user_visible_log", request_uid=self.job_id, message=message, session=session
         )
 
+    def add_user_visible_error(self, message: str, session: Any) -> None:
+        cads_broker.database.add_event(
+            event_type="user_visible_error", request_uid=self.job_id, message=message, session=session
+        )
+
     def add_stdout(self, message: str, session: Any) -> None:
         self.logger.info(message)
         cads_broker.database.add_event(
