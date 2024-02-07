@@ -43,8 +43,9 @@ class Context:
             event_type="stderr", request_uid=self.job_id, message=message, session=session
         )
 
+    @property
     def session_maker(self) -> Any:
-        return cads_broker.database.ensure_session_obj(None)()
+        return cads_broker.database.ensure_session_obj(None)
     
 
 def submit_workflow(
