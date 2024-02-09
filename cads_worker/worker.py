@@ -1,3 +1,4 @@
+import functools
 import os
 import socket
 import tempfile
@@ -16,37 +17,67 @@ LOGGER = structlog.get_logger(__name__)
 cacholote.config.set(logger=LOGGER)
 
 
+def ensure_session(func):
+    @functools.wraps(func)
+    def wrapper(self, *args, session=None, **kwargs):
+        close_session = False
+        if session is None:
+            session = self.session_maker()
+            close_session = True
+        func(self, *args, session=session, **kwargs)
+        if close_session:
+            session.close()
+
+    return wrapper
+
+
 class Context:
     def __init__(self, job_id: str, logger: Any):
         self.job_id = job_id
         self.logger = logger
 
-    def add_user_visible_log(self, message: str, session: Any) -> None:
+    @ensure_session
+    def add_user_visible_log(self, message: str, session: Any = None) -> None:
         cads_broker.database.add_event(
-            event_type="user_visible_log", request_uid=self.job_id, message=message, session=session
+            event_type="user_visible_log",
+            request_uid=self.job_id,
+            message=message,
+            session=session,
         )
 
-    def add_user_visible_error(self, message: str, session: Any) -> None:
+    @ensure_session
+    def add_user_visible_error(self, message: str, session: Any = None) -> None:
         cads_broker.database.add_event(
-            event_type="user_visible_error", request_uid=self.job_id, message=message, session=session
+            event_type="user_visible_error",
+            request_uid=self.job_id,
+            message=message,
+            session=session,
         )
 
-    def add_stdout(self, message: str, session: Any) -> None:
+    @ensure_session
+    def add_stdout(self, message: str, session: Any = None) -> None:
         self.logger.info(message)
         cads_broker.database.add_event(
-            event_type="stdout", request_uid=self.job_id, message=message, session=session
+            event_type="stdout",
+            request_uid=self.job_id,
+            message=message,
+            session=session,
         )
 
-    def add_stderr(self, message: str, session: Any) -> None:
+    @ensure_session
+    def add_stderr(self, message: str, session: Any = None) -> None:
         self.logger.exception(message)
         cads_broker.database.add_event(
-            event_type="stderr", request_uid=self.job_id, message=message, session=session
+            event_type="stderr",
+            request_uid=self.job_id,
+            message=message,
+            session=session,
         )
 
     @property
     def session_maker(self) -> Any:
         return cads_broker.database.ensure_session_obj(None)
-    
+
 
 def submit_workflow(
     entry_point: str,
@@ -69,8 +100,11 @@ def submit_workflow(
         )
     structlog.contextvars.bind_contextvars(event_type="DATASET_COMPUTE", job_id=job_id)
     logger.info("Processing job", job_id=job_id)
+    cacholote.config.set(use_cache=False)
     adaptor_class = cads_adaptors.get_adaptor_class(entry_point, setup_code)
-    adaptor = adaptor_class(form=form, context=Context(job_id=job_id, logger=logger), **config)
+    adaptor = adaptor_class(
+        form=form, context=Context(job_id=job_id, logger=logger), **config
+    )
     cwd = os.getcwd()
     with tempfile.TemporaryDirectory() as tmpdir:
         os.chdir(tmpdir)
