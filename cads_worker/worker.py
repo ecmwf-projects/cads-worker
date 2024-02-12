@@ -74,7 +74,7 @@ class Context:
             session=session,
         )
 
-    @property
+    @functools.cached_property
     def session_maker(self) -> Any:
         return cads_broker.database.ensure_session_obj(None)
 
