@@ -100,7 +100,6 @@ def submit_workflow(
         )
     structlog.contextvars.bind_contextvars(event_type="DATASET_COMPUTE", job_id=job_id)
     logger.info("Processing job", job_id=job_id)
-    cacholote.config.set(use_cache=False)
     adaptor_class = cads_adaptors.get_adaptor_class(entry_point, setup_code)
     adaptor = adaptor_class(
         form=form, context=Context(job_id=job_id, logger=logger), **config
