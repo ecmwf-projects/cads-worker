@@ -102,8 +102,8 @@ def submit_workflow(
     structlog.contextvars.bind_contextvars(event_type="DATASET_COMPUTE", job_id=job_id)
     logger.info("Processing job", job_id=job_id)
     # FIXME: Temporary hack to use the same session as the context
-    cacholote.database.SESSIONMAKER = context.session_maker
     cacholote.config.set(use_cache=False)
+    cacholote.database.SESSIONMAKER = context.session_maker
     adaptor_class = cads_adaptors.get_adaptor_class(entry_point, setup_code)
     adaptor = adaptor_class(form=form, context=context, **config)
     cwd = os.getcwd()
