@@ -91,7 +91,8 @@ def submit_workflow(
 
     job_id = distributed.worker.thread_state.key  # type: ignore
     logger = LOGGER.bind(job_id=job_id)
-    with cads_broker.database.ensure_session_obj(None)() as session:
+    context = Context(job_id=job_id, logger=logger)
+    with context.session_maker() as session:
         cads_broker.database.add_event(
             event_type="worker_name",
             request_uid=job_id,
@@ -102,9 +103,7 @@ def submit_workflow(
     logger.info("Processing job", job_id=job_id)
     cacholote.config.set(use_cache=False)
     adaptor_class = cads_adaptors.get_adaptor_class(entry_point, setup_code)
-    adaptor = adaptor_class(
-        form=form, context=Context(job_id=job_id, logger=logger), **config
-    )
+    adaptor = adaptor_class(form=form, context=context, **config)
     cwd = os.getcwd()
     with tempfile.TemporaryDirectory() as tmpdir:
         os.chdir(tmpdir)
