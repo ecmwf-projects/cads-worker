@@ -105,21 +105,19 @@ def submit_workflow(
         )
     structlog.contextvars.bind_contextvars(event_type="DATASET_COMPUTE", job_id=job_id)
     logger.info("Processing job", job_id=job_id)
-    # cacholote.config.set(
-    #     logger=LOGGER,
-    #     cache_db_urlpath=None,
-    #     create_engine_kwargs={},
-    #     sessionmaker=context.session_maker,
-    # )
+    cacholote.config.set(
+        logger=LOGGER,
+        cache_db_urlpath=None,
+        create_engine_kwargs={},
+        sessionmaker=context.session_maker,
+    )
     adaptor_class = cads_adaptors.get_adaptor_class(entry_point, setup_code)
     adaptor = adaptor_class(form=form, context=context, **config)
     cwd = os.getcwd()
-    return 2  # type: ignore
     with tempfile.TemporaryDirectory() as tmpdir:
         os.chdir(tmpdir)
         try:
-            # result = cacholote.cacheable(adaptor.retrieve)(request=request)
-            result = adaptor.retrieve(request=request)
+            result = cacholote.cacheable(adaptor.retrieve)(request=request)
         except Exception:
             logger.exception(job_id=job_id, event_type="EXCEPTION")
             raise
@@ -127,5 +125,5 @@ def submit_workflow(
             os.chdir(cwd)
 
     fs, _ = cacholote.utils.get_cache_files_fs_dirname()
-    # fs.chmod(result.result["args"][0]["file:local_path"], acl="public-read")
-    return 2  # type: ignore
+    fs.chmod(result.result["args"][0]["file:local_path"], acl="public-read")
+    return result.id  # type: ignore
