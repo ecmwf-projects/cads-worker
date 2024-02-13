@@ -16,12 +16,17 @@ config.configure_logger()
 LOGGER = structlog.get_logger(__name__)
 
 
+@functools.lru_cache
+def create_session_maker() -> Any:
+    return cads_broker.database.ensure_session_obj(None)
+
+
 def ensure_session(func):
     @functools.wraps(func)
     def wrapper(self, *args, session=None, **kwargs):
         close_session = False
         if session is None:
-            session = self.session_maker()
+            session = create_session_maker()
             close_session = True
         func(self, *args, session=session, **kwargs)
         if close_session:
@@ -72,10 +77,6 @@ class Context:
             message=message,
             session=session,
         )
-
-    @functools.cached_property
-    def session_maker(self) -> Any:
-        return cads_broker.database.ensure_session_obj(None)
 
 
 def submit_workflow(
