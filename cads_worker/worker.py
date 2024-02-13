@@ -17,7 +17,7 @@ LOGGER = structlog.get_logger(__name__)
 
 
 @functools.lru_cache
-def create_session_maker() -> Any:
+def create_session_maker() -> cads_broker.database.sa.orm.sessionmaker:
     return cads_broker.database.ensure_session_obj(None)
 
 
@@ -77,6 +77,10 @@ class Context:
             message=message,
             session=session,
         )
+
+    @property
+    def session_maker(self) -> cads_broker.database.sa.orm.sessionmaker:
+        return create_session_maker()
 
 
 def submit_workflow(
