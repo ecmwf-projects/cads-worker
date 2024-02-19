@@ -26,7 +26,7 @@ def ensure_session(func):
     def wrapper(self, *args, session=None, **kwargs):
         close_session = False
         if session is None:
-            session = create_session_maker()
+            session = create_session_maker()()
             close_session = True
         func(self, *args, session=session, **kwargs)
         if close_session:
