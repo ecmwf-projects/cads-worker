@@ -44,16 +44,14 @@ class Context:
 
     def write(self, message: str) -> None:
         """Use the logger as a file-like object. Needed by tqdm progress bar."""
-        self.messages_buffer += message
+        if self.write_type == "stdout":
+            self.add_stdout(message)
+        elif self.write_type == "stderr":
+            self.add_stderr(message)
 
     def flush(self) -> None:
         """Write to the logger the content of the buffer."""
-        if self.messages_buffer:
-            if self.write_type == "stdout":
-                self.add_stdout(self.messages_buffer)
-            elif self.write_type == "stderr":
-                self.add_stderr(self.messages_buffer)
-            self.messages_buffer = ""
+        pass
 
     @ensure_session
     def add_user_visible_log(self, message: str, session: Any = None) -> None:
