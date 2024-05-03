@@ -74,20 +74,34 @@ class Context:
         )
 
     @ensure_session
-    def add_stdout(self, message: str, session: Any = None) -> None:
-        self.logger.info(message)
+    def add_stdout(
+        self, message: str, log_type: str = "info", session: Any = None, **kwargs
+    ) -> None:
+        if log_type == "info":
+            self.logger.info(message)
+        if log_type == "debug":
+            self.logger.debug(message)
+        if log_type == "warn":
+            self.logger.warn(message)
+        if log_type == "warning":
+            self.logger.warning(message)
         cads_broker.database.add_event(
-            event_type="stdout",
+            event_type=log_type,
             request_uid=self.job_id,
             message=message,
             session=session,
         )
 
     @ensure_session
-    def add_stderr(self, message: str, session: Any = None) -> None:
-        self.logger.exception(message)
+    def add_stderr(
+        self, message: str, log_type: str = "exception", session: Any = None, **kwargs
+    ) -> None:
+        if log_type == "exception":
+            self.logger.exception(message)
+        if log_type == "error":
+            self.logger.error(message)
         cads_broker.database.add_event(
-            event_type="stderr",
+            event_type=log_type,
             request_uid=self.job_id,
             message=message,
             session=session,
@@ -96,6 +110,24 @@ class Context:
     @property
     def session_maker(self) -> cads_broker.database.sa.orm.sessionmaker:
         return create_session_maker()
+
+    def info(self, *args, **kwargs):
+        self.add_stdout(*args, log_type="info", **kwargs)
+
+    def debug(self, *args, **kwargs):
+        self.add_stdout(*args, log_type="debug", **kwargs)
+
+    def warn(self, *args, **kwargs):
+        self.add_stdout(*args, log_type="warn", **kwargs)
+
+    def warning(self, *args, **kwargs):
+        self.add_stdout(*args, log_type="warning", **kwargs)
+
+    def error(self, *args, **kwargs):
+        self.add_stderr(*args, log_type="error", **kwargs)
+
+    def exception(self, *args, **kwargs):
+        self.add_stderr(*args, log_type="exception", **kwargs)
 
 
 def submit_workflow(
