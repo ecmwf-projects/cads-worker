@@ -85,6 +85,8 @@ class Context:
             self.logger.warn(message)
         if log_type == "warning":
             self.logger.warning(message)
+        if log_type == "critical":
+            self.logger.critical(message)
         cads_broker.database.add_event(
             event_type=log_type,
             request_uid=self.job_id,
@@ -122,6 +124,9 @@ class Context:
 
     def warning(self, *args, **kwargs):
         self.add_stdout(*args, log_type="warning", **kwargs)
+
+    def critical(self, *args, **kwargs):
+        self.add_stdout(*args, log_type="critical", **kwargs)
 
     def error(self, *args, **kwargs):
         self.add_stderr(*args, log_type="error", **kwargs)
