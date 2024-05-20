@@ -8,6 +8,7 @@ import cacholote
 import cads_broker.database
 import distributed.worker
 import structlog
+from distributed import get_worker
 
 from . import config
 
@@ -36,9 +37,14 @@ def ensure_session(func):
 
 
 class Context:
-    def __init__(self, job_id: str, logger: Any, write_type: str = "stdout"):
+    def __init__(
+        self,
+        job_id: str | None = None,
+        logger: Any | None = None,
+        write_type: str = "stdout",
+    ):
         self.job_id = job_id
-        self.logger = logger
+        self.logger = logger if logger is not None else LOGGER
         self.write_type = write_type
         self.messages_buffer = ""
 
@@ -56,55 +62,71 @@ class Context:
             self.messages_buffer = ""
 
     @ensure_session
-    def add_user_visible_log(self, message: str, session: Any = None) -> None:
+    def add_user_visible_log(self, message: str, session: Any = None, job_id: str | None = None) -> None:
         cads_broker.database.add_event(
             event_type="user_visible_log",
-            request_uid=self.job_id,
+            request_uid=self.job_id if job_id is None else job_id,
             message=message,
             session=session,
         )
 
     @ensure_session
-    def add_user_visible_error(self, message: str, session: Any = None) -> None:
+    def add_user_visible_error(
+        self, message: str, session: Any = None, job_id: str | None = None
+    ) -> None:
         cads_broker.database.add_event(
             event_type="user_visible_error",
-            request_uid=self.job_id,
+            request_uid=self.job_id if job_id is None else job_id,
             message=message,
             session=session,
         )
 
     @ensure_session
     def add_stdout(
-        self, message: str, log_type: str = "info", session: Any = None, **kwargs
+        self,
+        message: str,
+        log_type: str = "info",
+        session: Any = None,
+        job_id: str | None = None,
+        **kwargs,
     ) -> None:
+        if job_id is None:
+            job_id = self.job_id
         if log_type == "info":
-            self.logger.info(message)
+            self.logger.info(message, job_id=job_id)
         if log_type == "debug":
-            self.logger.debug(message)
+            self.logger.debug(message, job_id=job_id)
         if log_type == "warn":
-            self.logger.warn(message)
+            self.logger.warn(message, job_id=job_id)
         if log_type == "warning":
-            self.logger.warning(message)
+            self.logger.warning(message, job_id=job_id)
         if log_type == "critical":
-            self.logger.critical(message)
+            self.logger.critical(message, job_id=job_id)
         cads_broker.database.add_event(
             event_type=log_type,
-            request_uid=self.job_id,
+            request_uid=job_id,
             message=message,
             session=session,
         )
 
     @ensure_session
     def add_stderr(
-        self, message: str, log_type: str = "exception", session: Any = None, **kwargs
+        self,
+        message: str,
+        log_type: str = "exception",
+        session: Any = None,
+        job_id: str | None = None,
+        **kwargs,
     ) -> None:
+        if job_id is None:
+            job_id = self.job_id
         if log_type == "exception":
-            self.logger.exception(message)
+            self.logger.exception(message, job_id=job_id)
         if log_type == "error":
-            self.logger.error(message)
+            self.logger.error(message, job_id=job_id)
         cads_broker.database.add_event(
             event_type=log_type,
-            request_uid=self.job_id,
+            request_uid=job_id,
             message=message,
             session=session,
         )
@@ -146,6 +168,9 @@ def submit_workflow(
     import cads_adaptors
 
     job_id = distributed.worker.thread_state.key  # type: ignore
+    # send event with worker address and pid of the job
+    worker = get_worker()
+    worker.log_event(job_id, {"worker": worker.address, "pid": os.getpid()})
     logger = LOGGER.bind(job_id=job_id)
     context = Context(job_id=job_id, logger=logger)
     with context.session_maker() as session:
@@ -165,6 +190,8 @@ def submit_workflow(
     )
     adaptor_class = cads_adaptors.get_adaptor_class(entry_point, setup_code)
     adaptor = adaptor_class(form=form, context=context, **config)
+    if request.get("crash"):
+        bytearray(5512000000)
     cwd = os.getcwd()
     with tempfile.TemporaryDirectory() as tmpdir:
         os.chdir(tmpdir)
