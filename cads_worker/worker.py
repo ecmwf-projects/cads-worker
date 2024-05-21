@@ -62,7 +62,9 @@ class Context:
             self.messages_buffer = ""
 
     @ensure_session
-    def add_user_visible_log(self, message: str, session: Any = None, job_id: str | None = None) -> None:
+    def add_user_visible_log(
+        self, message: str, session: Any = None, job_id: str | None = None
+    ) -> None:
         cads_broker.database.add_event(
             event_type="user_visible_log",
             request_uid=self.job_id if job_id is None else job_id,
@@ -190,8 +192,6 @@ def submit_workflow(
     )
     adaptor_class = cads_adaptors.get_adaptor_class(entry_point, setup_code)
     adaptor = adaptor_class(form=form, context=context, **config)
-    if request.get("crash"):
-        bytearray(5512000000)
     cwd = os.getcwd()
     with tempfile.TemporaryDirectory() as tmpdir:
         os.chdir(tmpdir)
