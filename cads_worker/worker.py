@@ -212,3 +212,4 @@ def submit_workflow(
             cache_id=result.id,
             session=session,
         )
+    print("--------------finished processing job--------------")
