@@ -212,4 +212,3 @@ def submit_workflow(
             cache_id=int(result.id),
             session=session,
         )
-        context.info(f"--------------finished processing job {result.id}--------------", session=session)
