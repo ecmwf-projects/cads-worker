@@ -205,9 +205,10 @@ def submit_workflow(
             os.chdir(cwd)
     fs, _ = cacholote.utils.get_cache_files_fs_dirname()
     fs.chmod(result.result["args"][0]["file:local_path"], acl="public-read")
-    request = cads_broker.database.set_request_status(
-        job_id,
-        "successful",
-        cache_id=result.id,
-        session=session,
-    )
+    with context.session_maker() as session:
+        request = cads_broker.database.set_request_status(
+            job_id,
+            "successful",
+            cache_id=result.id,
+            session=session,
+        )
