@@ -207,9 +207,9 @@ def submit_workflow(
     fs.chmod(result.result["args"][0]["file:local_path"], acl="public-read")
     with context.session_maker() as session:
         request = cads_broker.database.set_request_status(
-            job_id,
-            "successful",
-            cache_id=result.id,
+            request_uid=job_id,
+            status="successful",
+            cache_id=int(result.id),
             session=session,
         )
         context.info(f"--------------finished processing job {result.id}--------------", session=session)
