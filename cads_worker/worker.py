@@ -166,7 +166,7 @@ def submit_workflow(
     config: dict[str, Any] = {},
     form: dict[str, Any] = {},
     metadata: dict[str, Any] = {},
-) -> int:
+):
     import cads_adaptors
 
     job_id = distributed.worker.thread_state.key  # type: ignore
@@ -203,7 +203,11 @@ def submit_workflow(
             raise
         finally:
             os.chdir(cwd)
-
     fs, _ = cacholote.utils.get_cache_files_fs_dirname()
     fs.chmod(result.result["args"][0]["file:local_path"], acl="public-read")
-    return result.id  # type: ignore
+    with context.session_maker() as session:
+        request = cads_broker.database.set_request_cache_id(
+            request_uid=job_id,
+            cache_id=result.id,
+            session=session,
+        )
