@@ -36,7 +36,7 @@ def ensure_session(func):
     return wrapper
 
 
-class Context:
+class Context(cacholote.config.Context):
     def __init__(
         self,
         job_id: str | None = None,
@@ -137,6 +137,9 @@ class Context:
     def session_maker(self) -> cads_broker.database.sa.orm.sessionmaker:
         return create_session_maker()
 
+    def upload_log(self, *args, **kwargs):
+        self.add_stdout(*args, log_type="upload", **kwargs)
+
     def info(self, *args, **kwargs):
         self.add_stdout(*args, log_type="info", **kwargs)
 
@@ -189,6 +192,7 @@ def submit_workflow(
         cache_db_urlpath=None,
         create_engine_kwargs={},
         sessionmaker=context.session_maker,
+        context=context,
     )
     adaptor_class = cads_adaptors.get_adaptor_class(entry_point, setup_code)
     adaptor = adaptor_class(form=form, context=context, **config)
