@@ -137,6 +137,9 @@ class Context(cacholote.config.Context):
     def session_maker(self) -> cads_broker.database.sa.orm.sessionmaker:
         return create_session_maker()
 
+    def upload_log(self, *args, **kwargs):
+        self.add_stdout(*args, log_type="upload", **kwargs)
+
     def info(self, *args, **kwargs):
         self.add_stdout(*args, log_type="info", **kwargs)
 
