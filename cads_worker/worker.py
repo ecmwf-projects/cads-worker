@@ -185,6 +185,11 @@ def submit_workflow(
             message=socket.gethostname(),
             session=session,
         )
+        system_request = cads_broker.database.get_request(request_uid=job_id, session=session)
+        request = system_request.request_body.get("request", {})
+        form = system_request.adaptor_properties.form
+        config.update(system_request.adaptor_properties.config)
+
     structlog.contextvars.bind_contextvars(event_type="DATASET_COMPUTE", job_id=job_id)
     logger.info("Processing job", job_id=job_id)
     cacholote.config.set(
