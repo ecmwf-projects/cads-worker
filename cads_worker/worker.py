@@ -188,7 +188,7 @@ def submit_workflow(
     config: dict[str, Any] = {},
     form: dict[str, Any] = {},
     metadata: dict[str, Any] = {},
-):
+) -> None:
     import cads_adaptors
 
     job_id = distributed.worker.thread_state.key  # type: ignore
@@ -223,9 +223,9 @@ def submit_workflow(
     adaptor_class = cads_adaptors.get_adaptor_class(entry_point, setup_code)
     adaptor = adaptor_class(form=form, context=context, **config)
     try:
-        request = {k: request[k] for k in sorted(request.keys())}
+        sorted_request = {k: request[k] for k in sorted(request.keys())}
         with enter_task_temp_dir():
-            result = cacholote.cacheable(adaptor.retrieve)(request=request)
+            result = cacholote.cacheable(adaptor.retrieve)(request=sorted_request)
     except Exception as err:
         logger.exception(job_id=job_id, event_type="EXCEPTION")
         context.add_user_visible_error(f"The job failed with: {err.__class__.__name__}")
@@ -235,7 +235,7 @@ def submit_workflow(
     fs, _ = cacholote.utils.get_cache_files_fs_dirname()
     fs.chmod(result.result["args"][0]["file:local_path"], acl="public-read")
     with context.session_maker() as session:
-        request = cads_broker.database.set_request_cache_id(
+        cads_broker.database.set_request_cache_id(
             request_uid=job_id,
             cache_id=result.id,
             session=session,
