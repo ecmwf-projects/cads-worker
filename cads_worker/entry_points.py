@@ -1,4 +1,6 @@
+import datetime
 import os
+from typing import Optional
 
 import cacholote
 import structlog
@@ -29,5 +31,29 @@ def _cache_cleaner() -> None:
         raise
 
 
+def _add_tzinfo(timestamp: datetime.datetime | None) -> datetime.datetime | None:
+    return (
+        timestamp.replace(tzinfo=datetime.timezone.utc)
+        if timestamp is not None and timestamp.tzinfo is None
+        else timestamp
+    )
+
+
+def _expire_cache_entries(
+    collection_id: Optional[list[str]] = None,
+    before: Optional[datetime.datetime] = None,
+    after: Optional[datetime.datetime] = None,
+) -> None:
+    cacholote.expire_cache_entries(
+        tags=collection_id,
+        before=_add_tzinfo(before),
+        after=_add_tzinfo(after),
+    )
+
+
 def cache_cleaner() -> None:
     typer.run(_cache_cleaner)
+
+
+def expire_cache_entries() -> None:
+    typer.run(_expire_cache_entries)
