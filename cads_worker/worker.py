@@ -5,6 +5,7 @@ import tempfile
 from typing import Any
 
 import cacholote
+import cads_adaptors
 import cads_broker.database
 import distributed.worker
 import structlog
@@ -170,8 +171,6 @@ def submit_workflow(
     form: dict[str, Any] = {},
     metadata: dict[str, Any] = {},
 ):
-    import cads_adaptors
-
     job_id = distributed.worker.thread_state.key  # type: ignore
     # send event with worker address and pid of the job
     worker = get_worker()
@@ -185,7 +184,9 @@ def submit_workflow(
             message=socket.gethostname(),
             session=session,
         )
-        system_request = cads_broker.database.get_request(request_uid=job_id, session=session)
+        system_request = cads_broker.database.get_request(
+            request_uid=job_id, session=session
+        )
         request = system_request.request_body.get("request", {})
         form = system_request.adaptor_properties.form
         config.update(system_request.adaptor_properties.config)
@@ -209,7 +210,9 @@ def submit_workflow(
             result = cacholote.cacheable(adaptor.retrieve)(request=request)
         except Exception as err:
             logger.exception(job_id=job_id, event_type="EXCEPTION")
-            context.add_user_visible_error(f"The job failed with: {err.__class__.__name__}")
+            context.add_user_visible_error(
+                f"The job failed with: {err.__class__.__name__}"
+            )
             context.error(f"{err.__class__.__name__}: {str(err)}")
             raise
         finally:
