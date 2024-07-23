@@ -32,11 +32,9 @@ def _cache_cleaner() -> None:
 
 
 def _add_tzinfo(timestamp: datetime.datetime | None) -> datetime.datetime | None:
-    return (
-        timestamp.replace(tzinfo=datetime.timezone.utc)
-        if timestamp is not None and timestamp.tzinfo is None
-        else timestamp
-    )
+    if timestamp is not None and timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=datetime.timezone.utc)
+    return timestamp
 
 
 def _expire_cache_entries(
