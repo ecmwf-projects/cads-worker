@@ -38,9 +38,10 @@ def test_cache_entries(
         now = cached_now()
         assert now == cached_now()
 
-        entry_points._expire_cache_entries(
+        count = entry_points._expire_cache_entries(
             collection_id=collection_id,
             before=before,
             after=after,
         )
+        assert count == 1
         assert now != cached_now()
