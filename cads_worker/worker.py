@@ -219,7 +219,8 @@ def submit_workflow(
         finally:
             os.chdir(cwd)
     fs, _ = cacholote.utils.get_cache_files_fs_dirname()
-    fs.chmod(result.result["args"][0]["file:local_path"], acl="public-read")
+    if (local_path := result.result["args"][0]["file:local_path"]).startswith("s3://"):
+        fs.chmod(local_path, acl="public-read")
     with context.session_maker() as session:
         request = cads_broker.database.set_request_cache_id(
             request_uid=job_id,
