@@ -27,6 +27,7 @@ readme = "README.md"
 
 [project.scripts]
 cache-cleaner = "cads_worker.entry_points:cache_cleaner"
+expire-cache-entries = "cads_worker.entry_points:expire_cache_entries"
 
 [tool.coverage.run]
 branch = true

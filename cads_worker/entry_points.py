@@ -1,8 +1,11 @@
+import datetime
 import os
+from typing import Annotated, Optional
 
 import cacholote
 import structlog
 import typer
+from typer import Option
 
 from . import config
 
@@ -29,5 +32,38 @@ def _cache_cleaner() -> None:
         raise
 
 
+def _add_tzinfo(timestamp: datetime.datetime | None) -> datetime.datetime | None:
+    if timestamp is not None and timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=datetime.timezone.utc)
+    return timestamp
+
+
+def _expire_cache_entries(
+    collection_id: Annotated[
+        Optional[list[str]], Option(help="Collection ID to expire")
+    ] = None,
+    before: Annotated[
+        Optional[datetime.datetime],
+        Option(help="Expire entries created before this date"),
+    ] = None,
+    after: Annotated[
+        Optional[datetime.datetime],
+        Option(help="Expire entries created after this date"),
+    ] = None,
+) -> int:
+    """Expire cache entries."""
+    count = cacholote.expire_cache_entries(
+        tags=collection_id,
+        before=_add_tzinfo(before),
+        after=_add_tzinfo(after),
+    )
+    typer.echo(f"Number of entries expired: {count}")
+    return count
+
+
 def cache_cleaner() -> None:
     typer.run(_cache_cleaner)
+
+
+def expire_cache_entries() -> None:
+    typer.run(_expire_cache_entries)
