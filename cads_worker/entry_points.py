@@ -40,15 +40,18 @@ def _add_tzinfo(timestamp: datetime.datetime | None) -> datetime.datetime | None
 
 def _expire_cache_entries(
     collection_id: Annotated[
-        Optional[list[str]], Option(help="Collection ID to expire")
+        Optional[list[str]], Option(help="Collection ID to expire", show_default="all")
     ] = None,
     before: Annotated[
         Optional[datetime.datetime],
-        Option(help="Expire entries created before this date"),
+        Option(
+            help="Expire entries created before this date",
+            show_default="no bound",
+        ),
     ] = None,
     after: Annotated[
         Optional[datetime.datetime],
-        Option(help="Expire entries created after this date"),
+        Option(help="Expire entries created after this date", show_default="no bound"),
     ] = None,
 ) -> int:
     """Expire cache entries."""
