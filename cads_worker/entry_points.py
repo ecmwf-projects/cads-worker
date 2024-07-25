@@ -1,6 +1,6 @@
 import datetime
 import os
-from typing import Annotated, Optional
+from typing import Annotated
 
 import cacholote
 import structlog
@@ -32,31 +32,34 @@ def _cache_cleaner() -> None:
         raise
 
 
-def _add_tzinfo(timestamp: datetime.datetime | None) -> datetime.datetime | None:
-    if timestamp is not None and timestamp.tzinfo is None:
+def _add_tzinfo(timestamp: datetime.datetime) -> datetime.datetime:
+    if timestamp.tzinfo is None:
         timestamp = timestamp.replace(tzinfo=datetime.timezone.utc)
     return timestamp
 
 
 def _expire_cache_entries(
-    collection_id: Annotated[
-        Optional[list[str]], Option(help="Collection ID to expire", show_default="all")
-    ] = None,
     before: Annotated[
-        Optional[datetime.datetime],
-        Option(
-            help="Expire entries created before this date",
-            show_default="no bound",
-        ),
-    ] = None,
+        datetime.datetime,
+        Option(help="Expire entries created before this date"),
+    ],
     after: Annotated[
-        Optional[datetime.datetime],
-        Option(help="Expire entries created after this date", show_default="no bound"),
-    ] = None,
+        datetime.datetime,
+        Option(help="Expire entries created after this date"),
+    ],
+    collection_id: Annotated[list[str], Option(help="Collection ID to expire")] = [],
+    all_collections: Annotated[
+        bool, Option("--all-collections", help="Expire all collections")
+    ] = False,
 ) -> int:
     """Expire cache entries."""
+    if (all_collections and collection_id) or not (all_collections or collection_id):
+        raise ValueError(
+            "Either '--collection-id' or '--all-collections' must be chosen, but not both."
+        )
+
     count = cacholote.expire_cache_entries(
-        tags=collection_id,
+        tags=None if all_collections else collection_id,
         before=_add_tzinfo(before),
         after=_add_tzinfo(after),
     )
