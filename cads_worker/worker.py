@@ -1,5 +1,6 @@
 import functools
 import os
+import random
 import socket
 import tempfile
 from typing import Any
@@ -11,7 +12,7 @@ import distributed.worker
 import structlog
 from distributed import get_worker
 
-from . import config
+from . import config, utils
 
 config.configure_logger()
 
@@ -192,11 +193,11 @@ def submit_workflow(
         config.update(system_request.adaptor_properties.config)
 
     structlog.contextvars.bind_contextvars(event_type="DATASET_COMPUTE", job_id=job_id)
+    cache_files_urlpath = random.choice(utils.parse_data_nodes(None))
     logger.info("Processing job", job_id=job_id)
     cacholote.config.set(
         logger=LOGGER,
-        cache_db_urlpath=None,
-        create_engine_kwargs={},
+        cache_files_urlpath=cache_files_urlpath,
         sessionmaker=context.session_maker,
         context=context,
     )
