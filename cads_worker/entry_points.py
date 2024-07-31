@@ -15,24 +15,26 @@ cacholote.config.set(logger=LOGGER)
 
 
 def _cache_cleaner() -> None:
-    max_size = int(os.environ.get("MAX_SIZE", 1_000_000_000))
-    cache_bucket = os.environ.get("CACHE_BUCKET", None)
-    for cache_files_urlpath in utils.parse_data_nodes(None):
+    max_size = int(os.getenv("MAX_SIZE", 1_000_000_000))
+    method = os.getenv("METHOD", "LRU")
+    delete_unknown_files = bool(os.getenv("DELETE_UNKNOWN_FILES", True))
+    lock_validity_period = float(os.getenv("LOCK_VALIDITY_PERIOD", 60 * 60 * 24))
+    for cache_files_urlpath in utils.parse_data_volumes_config():
         cacholote.config.set(cache_files_urlpath=cache_files_urlpath)
         LOGGER.info(
             "Running cache cleaner",
             max_size=max_size,
-            cache_bucket=cache_bucket,
+            method=method,
+            delete_unknown_files=delete_unknown_files,
+            lock_validity_period=lock_validity_period,
             cache_files_urlpath=cache_files_urlpath,
         )
         try:
             cacholote.clean_cache_files(
                 maxsize=max_size,
-                method=os.environ.get("METHOD", "LRU"),  # type: ignore[arg-type] # let cacholote handle it
-                delete_unknown_files=bool(os.environ.get("DELETE_UNKNOWN_FILES", 1)),
-                lock_validity_period=float(
-                    os.environ.get("LOCK_VALIDITY_PERIOD", 60 * 60 * 24)
-                ),
+                method=method,  # type: ignore[arg-type] # let cacholote handle it
+                delete_unknown_files=delete_unknown_files,
+                lock_validity_period=lock_validity_period,
             )
         except Exception:
             LOGGER.exception("cache_cleaner crashed")

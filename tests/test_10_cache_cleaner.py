@@ -22,9 +22,9 @@ def test_cache_cleaner(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) 
     assert cached_path.exists()
 
     # create data nodes config
-    data_nodes_path = tmp_path / "data_nodes"
-    data_nodes_path.write_text(cache_files_urlpath)
-    monkeypatch.setenv("DATA_NODES_CONFIG", str(data_nodes_path))
+    data_volumes_config = tmp_path / "data_nodes"
+    data_volumes_config.write_text(cache_files_urlpath)
+    monkeypatch.setenv("DATA_VOLUMES_CONFIG", str(data_volumes_config))
 
     # clean cache
     cache_env = os.environ.copy()
