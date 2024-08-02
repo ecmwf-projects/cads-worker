@@ -194,8 +194,16 @@ def submit_workflow(
         config.update(system_request.adaptor_properties.config)
 
     structlog.contextvars.bind_contextvars(event_type="DATASET_COMPUTE", job_id=job_id)
-    data_volume = random.choice(utils.parse_data_volumes_config())
-    cache_files_urlpath = os.path.join(data_volume, datetime.datetime.now().isoformat())
+
+    cache_files_urlpath = random.choice(utils.parse_data_volumes_config())
+    depth = os.getenv("CACHE_DEPTH", 1)
+    if depth == 2:
+        cache_files_urlpath = os.path.join(
+            cache_files_urlpath, datetime.date.today().isoformat()
+        )
+    elif depth != 1:
+        context.warn(f"CACHE_DETPH={depth} is not supported.")
+
     logger.info("Processing job", job_id=job_id)
     cacholote.config.set(
         logger=LOGGER,
