@@ -195,7 +195,7 @@ def submit_workflow(
 
     structlog.contextvars.bind_contextvars(event_type="DATASET_COMPUTE", job_id=job_id)
     data_volume = random.choice(utils.parse_data_volumes_config())
-    cache_files_urlpath = os.path.join(data_volume, datetime.date.today().isoformat())
+    cache_files_urlpath = os.path.join(data_volume, datetime.datetime.now().isoformat())
     logger.info("Processing job", job_id=job_id)
     cacholote.config.set(
         logger=LOGGER,
