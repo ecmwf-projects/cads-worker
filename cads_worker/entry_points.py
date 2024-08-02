@@ -51,6 +51,9 @@ def _expire_cache_entries(
     all_collections: Annotated[
         bool, Option("--all-collections", help="Expire all collections")
     ] = False,
+    delete: Annotated[
+        bool, Option("--delete", help="Delete entries to expire")
+    ] = False,
 ) -> int:
     """Expire cache entries."""
     if (all_collections and collection_id) or not (all_collections or collection_id):
@@ -62,6 +65,7 @@ def _expire_cache_entries(
         tags=None if all_collections else collection_id,
         before=_add_tzinfo(before),
         after=_add_tzinfo(after),
+        delete=delete,
     )
     typer.echo(f"Number of entries expired: {count}")
     return count
