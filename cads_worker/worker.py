@@ -1,5 +1,7 @@
+import datetime
 import functools
 import os
+import random
 import socket
 import tempfile
 from typing import Any
@@ -11,7 +13,7 @@ import distributed.worker
 import structlog
 from distributed import get_worker
 
-from . import config
+from . import config, utils
 
 config.configure_logger()
 
@@ -192,11 +194,20 @@ def submit_workflow(
         config.update(system_request.adaptor_properties.config)
 
     structlog.contextvars.bind_contextvars(event_type="DATASET_COMPUTE", job_id=job_id)
+
+    cache_files_urlpath = random.choice(utils.parse_data_volumes_config())
+    depth = int(os.getenv("CACHE_DEPTH", 1))
+    if depth == 2:
+        cache_files_urlpath = os.path.join(
+            cache_files_urlpath, datetime.date.today().isoformat()
+        )
+    elif depth != 1:
+        context.warn(f"CACHE_DETPH={depth} is not supported.")
+
     logger.info("Processing job", job_id=job_id)
     cacholote.config.set(
         logger=LOGGER,
-        cache_db_urlpath=None,
-        create_engine_kwargs={},
+        cache_files_urlpath=cache_files_urlpath,
         sessionmaker=context.session_maker,
         context=context,
     )
@@ -219,7 +230,8 @@ def submit_workflow(
         finally:
             os.chdir(cwd)
     fs, _ = cacholote.utils.get_cache_files_fs_dirname()
-    fs.chmod(result.result["args"][0]["file:local_path"], acl="public-read")
+    if (local_path := result.result["args"][0]["file:local_path"]).startswith("s3://"):
+        fs.chmod(local_path, acl="public-read")
     with context.session_maker() as session:
         request = cads_broker.database.set_request_cache_id(
             request_uid=job_id,

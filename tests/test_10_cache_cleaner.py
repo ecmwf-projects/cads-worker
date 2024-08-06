@@ -3,9 +3,10 @@ import pathlib
 import subprocess
 
 import cacholote
+import pytest
 
 
-def test_cache_cleaner(tmp_path: pathlib.Path) -> None:
+def test_cache_cleaner(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> None:
     # create dummy file
     dummy_path = tmp_path / "dummy.txt"
     dummy_path.write_text("dummy")
@@ -19,6 +20,11 @@ def test_cache_cleaner(tmp_path: pathlib.Path) -> None:
     ):
         cached_path = pathlib.Path(cached_open(dummy_path).name)
     assert cached_path.exists()
+
+    # create data nodes config
+    data_volumes_config = tmp_path / "data-volumes.config"
+    data_volumes_config.write_text(cache_files_urlpath)
+    monkeypatch.setenv("DATA_VOLUMES_CONFIG", str(data_volumes_config))
 
     # clean cache
     cache_env = os.environ.copy()
