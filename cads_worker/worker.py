@@ -208,7 +208,7 @@ def submit_workflow(
         try:
             request = {k: request[k] for k in sorted(request.keys())}
             with cacholote.config.set(tag=config.get("collection_id")):
-                result = cacholote.cacheable(adaptor.retrieve)(request=request)
+                result = cacholote.cacheable(adaptor.retrieve, collection_id=config.get("collection_id"))(request=request)
         except Exception as err:
             logger.exception(job_id=job_id, event_type="EXCEPTION")
             context.add_user_visible_error(
