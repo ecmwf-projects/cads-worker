@@ -1,6 +1,6 @@
 import datetime
 import os
-from typing import Annotated
+from typing import Annotated, TypedDict
 
 import cacholote
 import structlog
@@ -14,19 +14,35 @@ LOGGER = structlog.get_logger(__name__)
 cacholote.config.set(logger=LOGGER)
 
 
+def strtobool(value: str) -> bool:
+    if value.lower() in ("y", "yes", "t", "true", "on", "1"):
+        return True
+    if value.lower() in ("n", "no", "f", "false", "off", "0"):
+        return False
+    raise ValueError(f"invalid truth value {value!r}")
+
+
+class CleanerKwargs(TypedDict):
+    maxsize: int
+    method: str
+    delete_unknown_files: bool
+    lock_validity_period: float
+    use_database: bool
+
+
 def _cache_cleaner() -> None:
-    max_size = int(os.environ.get("MAX_SIZE", 1_000_000_000))
     cache_bucket = os.environ.get("CACHE_BUCKET", None)
-    LOGGER.info("Running cache cleaner", max_size=max_size, cache_bucket=cache_bucket)
+    use_database = strtobool(os.environ.get("USE_DATABASE", "1"))
+    cleaner_kwargs = CleanerKwargs(
+        maxsize=int(os.environ.get("MAX_SIZE", 1_000_000_000)),
+        method=os.environ.get("METHOD", "LRU"),
+        delete_unknown_files=not use_database,
+        lock_validity_period=float(os.environ.get("LOCK_VALIDITY_PERIOD", 86400)),
+        use_database=use_database,
+    )
+    LOGGER.info("Running cache cleaner", cache_bucket=cache_bucket, **cleaner_kwargs)
     try:
-        cacholote.clean_cache_files(
-            maxsize=max_size,
-            method=os.environ.get("METHOD", "LRU"),  # type: ignore[arg-type] # let cacholote handle it
-            delete_unknown_files=bool(os.environ.get("DELETE_UNKNOWN_FILES", 1)),
-            lock_validity_period=float(
-                os.environ.get("LOCK_VALIDITY_PERIOD", 60 * 60 * 24)
-            ),
-        )
+        cacholote.clean_cache_files(**cleaner_kwargs)
     except Exception:
         LOGGER.exception("cache_cleaner crashed")
         raise
