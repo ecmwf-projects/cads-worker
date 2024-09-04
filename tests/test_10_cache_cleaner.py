@@ -30,6 +30,5 @@ def test_cache_cleaner(
     monkeypatch.setenv("USE_DATABASE", use_database)
     monkeypatch.setenv("CACHOLOTE_CACHE_DB_URLPATH", cache_db_urlpath)
     monkeypatch.setenv("CACHOLOTE_CACHE_FILES_URLPATH", cache_files_urlpath)
-    monkeypatch.setenv("USE_DATABASE", use_database)
     subprocess.run("cache-cleaner", check=True)
     assert not cached_path.exists()
