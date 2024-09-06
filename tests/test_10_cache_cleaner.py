@@ -1,4 +1,3 @@
-import os
 import pathlib
 import subprocess
 
@@ -6,7 +5,12 @@ import cacholote
 import pytest
 
 
-def test_cache_cleaner(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize("use_database", ["true", "false"])
+def test_cache_cleaner(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+    use_database: str,
+) -> None:
     # create dummy file
     dummy_path = tmp_path / "dummy.txt"
     dummy_path.write_text("dummy")
@@ -27,13 +31,9 @@ def test_cache_cleaner(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) 
     monkeypatch.setenv("DATA_VOLUMES_CONFIG", str(data_volumes_config))
 
     # clean cache
-    cache_env = os.environ.copy()
-    cache_env.update(
-        {
-            "MAX_SIZE": "0",
-            "CACHOLOTE_CACHE_DB_URLPATH": cache_db_urlpath,
-            "CACHOLOTE_CACHE_FILES_URLPATH": cache_files_urlpath,
-        }
-    )
-    subprocess.run("cache-cleaner", check=True, env=cache_env)
+    monkeypatch.setenv("MAX_SIZE", "0")
+    monkeypatch.setenv("USE_DATABASE", use_database)
+    monkeypatch.setenv("CACHOLOTE_CACHE_DB_URLPATH", cache_db_urlpath)
+    monkeypatch.setenv("CACHOLOTE_CACHE_FILES_URLPATH", cache_files_urlpath)
+    subprocess.run("cache-cleaner", check=True)
     assert not cached_path.exists()

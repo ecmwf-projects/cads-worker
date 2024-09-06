@@ -213,13 +213,16 @@ def submit_workflow(
     )
     adaptor_class = cads_adaptors.get_adaptor_class(entry_point, setup_code)
     adaptor = adaptor_class(form=form, context=context, **config)
+    collection_id = config.get("collection_id")
     cwd = os.getcwd()
     with tempfile.TemporaryDirectory() as tmpdir:
         os.chdir(tmpdir)
         try:
             request = {k: request[k] for k in sorted(request.keys())}
-            with cacholote.config.set(tag=config.get("collection_id")):
-                result = cacholote.cacheable(adaptor.retrieve)(request=request)
+            with cacholote.config.set(tag=collection_id):
+                result = cacholote.cacheable(
+                    adaptor.retrieve, collection_id=collection_id
+                )(request=request)
         except Exception as err:
             logger.exception(job_id=job_id, event_type="EXCEPTION")
             context.add_user_visible_error(

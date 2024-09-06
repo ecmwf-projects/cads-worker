@@ -1,6 +1,6 @@
 import datetime
 import os
-from typing import Annotated
+from typing import Annotated, TypedDict
 
 import cacholote
 import structlog
@@ -14,34 +14,38 @@ LOGGER = structlog.get_logger(__name__)
 cacholote.config.set(logger=LOGGER)
 
 
+def strtobool(value: str) -> bool:
+    if value.lower() in ("y", "yes", "t", "true", "on", "1"):
+        return True
+    if value.lower() in ("n", "no", "f", "false", "off", "0"):
+        return False
+    raise ValueError(f"invalid truth value {value!r}")
+
+
+class CleanerKwargs(TypedDict):
+    maxsize: int
+    method: str
+    delete_unknown_files: bool
+    lock_validity_period: float
+    use_database: bool
+
+
 def _cache_cleaner() -> None:
-    max_size = int(os.getenv("MAX_SIZE", 1_000_000_000))
-    method = os.getenv("METHOD", "LRU")
-    delete_unknown_files = bool(os.getenv("DELETE_UNKNOWN_FILES", True))
-    lock_validity_period = float(os.getenv("LOCK_VALIDITY_PERIOD", 60 * 60 * 24))
-    depth = int(os.getenv("CACHE_DEPTH", 2))
-    for cache_files_urlpath in utils.parse_data_volumes_config():
-        cacholote.config.set(cache_files_urlpath=cache_files_urlpath)
-        LOGGER.info(
-            "Running cache cleaner",
-            max_size=max_size,
-            method=method,
-            delete_unknown_files=delete_unknown_files,
-            lock_validity_period=lock_validity_period,
-            cache_files_urlpath=cache_files_urlpath,
-            depth=depth,
-        )
-        try:
-            cacholote.clean_cache_files(
-                maxsize=max_size,
-                method=method,  # type: ignore[arg-type] # let cacholote handle it
-                delete_unknown_files=delete_unknown_files,
-                lock_validity_period=lock_validity_period,
-                depth=depth,
-            )
-        except Exception:
-            LOGGER.exception("cache_cleaner crashed")
-            raise
+    cache_bucket = os.environ.get("CACHE_BUCKET", None)
+    use_database = strtobool(os.environ.get("USE_DATABASE", "1"))
+    cleaner_kwargs = CleanerKwargs(
+        maxsize=int(os.environ.get("MAX_SIZE", 1_000_000_000)),
+        method=os.environ.get("METHOD", "LRU"),
+        delete_unknown_files=not use_database,
+        lock_validity_period=float(os.environ.get("LOCK_VALIDITY_PERIOD", 86400)),
+        use_database=use_database,
+    )
+    LOGGER.info("Running cache cleaner", cache_bucket=cache_bucket, **cleaner_kwargs)
+    try:
+        cacholote.clean_cache_files(**cleaner_kwargs)
+    except Exception:
+        LOGGER.exception("cache_cleaner crashed")
+        raise
 
 
 def _add_tzinfo(timestamp: datetime.datetime) -> datetime.datetime:
@@ -63,6 +67,9 @@ def _expire_cache_entries(
     all_collections: Annotated[
         bool, Option("--all-collections", help="Expire all collections")
     ] = False,
+    delete: Annotated[
+        bool, Option("--delete", help="Delete entries to expire")
+    ] = False,
 ) -> int:
     """Expire cache entries."""
     if (all_collections and collection_id) or not (all_collections or collection_id):
@@ -74,6 +81,7 @@ def _expire_cache_entries(
         tags=None if all_collections else collection_id,
         before=_add_tzinfo(before),
         after=_add_tzinfo(after),
+        delete=delete,
     )
     typer.echo(f"Number of entries expired: {count}")
     return count
