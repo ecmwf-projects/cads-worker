@@ -28,10 +28,10 @@ class CleanerKwargs(TypedDict):
     delete_unknown_files: bool
     lock_validity_period: float
     use_database: bool
+    depth: int
 
 
 def _cache_cleaner() -> None:
-    cache_bucket = os.environ.get("CACHE_BUCKET", None)
     use_database = strtobool(os.environ.get("USE_DATABASE", "1"))
     cleaner_kwargs = CleanerKwargs(
         maxsize=int(os.environ.get("MAX_SIZE", 1_000_000_000)),
@@ -39,13 +39,20 @@ def _cache_cleaner() -> None:
         delete_unknown_files=not use_database,
         lock_validity_period=float(os.environ.get("LOCK_VALIDITY_PERIOD", 86400)),
         use_database=use_database,
+        depth=int(os.getenv("CACHE_DEPTH", 2)),
     )
-    LOGGER.info("Running cache cleaner", cache_bucket=cache_bucket, **cleaner_kwargs)
-    try:
-        cacholote.clean_cache_files(**cleaner_kwargs)
-    except Exception:
-        LOGGER.exception("cache_cleaner crashed")
-        raise
+    for cache_files_urlpath in utils.parse_data_volumes_config():
+        cacholote.config.set(cache_files_urlpath=cache_files_urlpath)
+        LOGGER.info(
+            "Running cache cleaner",
+            cache_files_urlpath=cache_files_urlpath,
+            **cleaner_kwargs,
+        )
+        try:
+            cacholote.clean_cache_files(**cleaner_kwargs)
+        except Exception:
+            LOGGER.exception("cache_cleaner crashed")
+            raise
 
 
 def _add_tzinfo(timestamp: datetime.datetime) -> datetime.datetime:
