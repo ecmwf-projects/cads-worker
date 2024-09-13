@@ -25,6 +25,11 @@ def test_cache_cleaner(
         cached_path = pathlib.Path(cached_open(dummy_path).name)
     assert cached_path.exists()
 
+    # create data nodes config
+    data_volumes_config = tmp_path / "data-volumes.config"
+    data_volumes_config.write_text(cache_files_urlpath)
+    monkeypatch.setenv("DATA_VOLUMES_CONFIG", str(data_volumes_config))
+
     # clean cache
     monkeypatch.setenv("MAX_SIZE", "0")
     monkeypatch.setenv("USE_DATABASE", use_database)

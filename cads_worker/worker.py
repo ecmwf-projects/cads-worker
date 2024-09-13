@@ -1,7 +1,8 @@
+import datetime
 import functools
 import os
+import random
 import socket
-import tempfile
 from typing import Any
 
 import cacholote
@@ -11,7 +12,7 @@ import distributed.worker
 import structlog
 from distributed import get_worker
 
-from . import config
+from . import config, utils
 
 config.configure_logger()
 
@@ -192,37 +193,52 @@ def submit_workflow(
         config.update(system_request.adaptor_properties.config)
 
     structlog.contextvars.bind_contextvars(event_type="DATASET_COMPUTE", job_id=job_id)
+
+    cache_files_urlpath = random.choice(utils.parse_data_volumes_config())
+    depth = int(os.getenv("CACHE_DEPTH", 1))
+    if depth == 2:
+        cache_files_urlpath = os.path.join(
+            cache_files_urlpath, datetime.date.today().isoformat()
+        )
+    elif depth != 1:
+        context.warn(f"CACHE_DETPH={depth} is not supported.")
+
     logger.info("Processing job", job_id=job_id)
+    collection_id = config.get("collection_id")
     cacholote.config.set(
         logger=LOGGER,
-        cache_db_urlpath=None,
-        create_engine_kwargs={},
+        cache_files_urlpath=cache_files_urlpath,
         sessionmaker=context.session_maker,
         context=context,
+        tag=collection_id,
     )
+    fs, dirname = cacholote.utils.get_cache_files_fs_dirname()
+
     adaptor_class = cads_adaptors.get_adaptor_class(entry_point, setup_code)
-    adaptor = adaptor_class(form=form, context=context, **config)
-    collection_id = config.get("collection_id")
-    cwd = os.getcwd()
-    with tempfile.TemporaryDirectory() as tmpdir:
-        os.chdir(tmpdir)
-        try:
-            request = {k: request[k] for k in sorted(request.keys())}
-            with cacholote.config.set(tag=collection_id):
-                result = cacholote.cacheable(
-                    adaptor.retrieve, collection_id=collection_id
-                )(request=request)
-        except Exception as err:
-            logger.exception(job_id=job_id, event_type="EXCEPTION")
-            context.add_user_visible_error(
-                f"The job failed with: {err.__class__.__name__}"
-            )
-            context.error(f"{err.__class__.__name__}: {str(err)}")
-            raise
-        finally:
-            os.chdir(cwd)
-    fs, _ = cacholote.utils.get_cache_files_fs_dirname()
-    fs.chmod(result.result["args"][0]["file:local_path"], acl="public-read")
+    try:
+        with utils.enter_tmp_working_dir() as working_dir:
+            base_dir = dirname if "file" in fs.protocol else working_dir
+            with utils.make_cache_tmp_path(base_dir) as cache_tmp_path:
+                adaptor = adaptor_class(
+                    form=form,
+                    context=context,
+                    cache_tmp_path=cache_tmp_path,
+                    **config,
+                )
+                request = {k: request[k] for k in sorted(request.keys())}
+                cached_retrieve = cacholote.cacheable(
+                    adaptor.retrieve,
+                    collection_id=collection_id,
+                )
+                result = cached_retrieve(request=request)
+    except Exception as err:
+        logger.exception(job_id=job_id, event_type="EXCEPTION")
+        context.add_user_visible_error(f"The job failed with: {err.__class__.__name__}")
+        context.error(f"{err.__class__.__name__}: {str(err)}")
+        raise
+
+    if "s3" in fs.protocol:
+        fs.chmod(result.result["args"][0]["file:local_path"], acl="public-read")
     with context.session_maker() as session:
         request = cads_broker.database.set_request_cache_id(
             request_uid=job_id,
