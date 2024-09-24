@@ -13,8 +13,9 @@ def test_utils_parse_data_volumes_config(
 ) -> None:
     monkeypatch.setenv("FOO", "foo")
     monkeypatch.setenv("BAR", "bar")
+    monkeypatch.setenv("BAZ", "")
     data_volumes_config = tmp_path / "data-volumes.config"
-    data_volumes_config.write_text("$FOO\n${BAR}")
+    data_volumes_config.write_text("\n\n$FOO\n\n${BAR}\n\n$BAZ\n\n")
     assert utils.parse_data_volumes_config(str(data_volumes_config)) == ["foo", "bar"]
 
     monkeypatch.setenv("DATA_VOLUMES_CONFIG", str(data_volumes_config))

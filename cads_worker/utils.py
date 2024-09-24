@@ -9,8 +9,12 @@ def parse_data_volumes_config(path: str | None = None) -> list[str]:
     if path is None:
         path = os.environ["DATA_VOLUMES_CONFIG"]
 
+    data_volumes = []
     with open(path) as fp:
-        return [os.path.expandvars(line.rstrip("\n")) for line in fp]
+        for line in fp:
+            if data_volume := os.path.expandvars(line.rstrip("\n")):
+                data_volumes.append(data_volume)
+    return data_volumes
 
 
 @contextlib.contextmanager
