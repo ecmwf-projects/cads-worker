@@ -1,4 +1,5 @@
 import datetime
+import distutils.util
 import functools
 import os
 import random
@@ -17,6 +18,8 @@ from . import config, utils
 config.configure_logger()
 
 LOGGER = structlog.get_logger(__name__)
+
+WORKER_LOGS_ON_DB = distutils.util.strtobool(os.getenv("WORKER_LOGS_ON_DB", "true"))
 
 
 @functools.lru_cache
@@ -106,12 +109,13 @@ class Context(cacholote.config.Context):
             self.logger.warning(message, job_id=job_id)
         if log_type == "critical":
             self.logger.critical(message, job_id=job_id)
-        cads_broker.database.add_event(
-            event_type=log_type,
-            request_uid=job_id,
-            message=message,
-            session=session,
-        )
+        if WORKER_LOGS_ON_DB:
+            cads_broker.database.add_event(
+                event_type=log_type,
+                request_uid=job_id,
+                message=message,
+                session=session,
+            )
 
     @ensure_session
     def add_stderr(
@@ -128,12 +132,13 @@ class Context(cacholote.config.Context):
             self.logger.exception(message, job_id=job_id)
         if log_type == "error":
             self.logger.error(message, job_id=job_id)
-        cads_broker.database.add_event(
-            event_type=log_type,
-            request_uid=job_id,
-            message=message,
-            session=session,
-        )
+        if WORKER_LOGS_ON_DB:
+            cads_broker.database.add_event(
+                event_type=log_type,
+                request_uid=job_id,
+                message=message,
+                session=session,
+            )
 
     @property
     def session_maker(self) -> cads_broker.database.sa.orm.sessionmaker:
