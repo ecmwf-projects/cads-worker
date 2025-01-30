@@ -35,7 +35,7 @@ class CleanerKwargs(TypedDict):
 
 def _cache_cleaner() -> None:
     use_database = strtobool(os.environ.get("USE_DATABASE", "1"))
-    batch_size = os.getenv("CACHE_BATCH_SIZE")
+    batch_size = os.getenv("BATCH_SIZE")
     cleaner_kwargs = CleanerKwargs(
         maxsize=int(os.environ.get("MAX_SIZE", 1_000_000_000)),
         method=os.environ.get("METHOD", "LRU"),
@@ -44,7 +44,7 @@ def _cache_cleaner() -> None:
         use_database=use_database,
         depth=int(os.getenv("CACHE_DEPTH", 2)),
         batch_size=batch_size if batch_size is None else int(batch_size),
-        batch_sleep=int(os.getenv("CACHE_BATCH_SLEEP", 0)),
+        batch_sleep=int(os.getenv("BATCH_SLEEP", 0)),
     )
     for cache_files_urlpath in utils.parse_data_volumes_config():
         cacholote.config.set(cache_files_urlpath=cache_files_urlpath)
