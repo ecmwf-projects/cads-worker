@@ -35,7 +35,7 @@ class CleanerKwargs(TypedDict):
 
 def _cache_cleaner() -> None:
     use_database = strtobool(os.environ.get("USE_DATABASE", "1"))
-    batch_size = os.getenv("CACHE_BATCH_SLEEP")
+    batch_size = os.getenv("CACHE_BATCH_SIZE")
     cleaner_kwargs = CleanerKwargs(
         maxsize=int(os.environ.get("MAX_SIZE", 1_000_000_000)),
         method=os.environ.get("METHOD", "LRU"),
