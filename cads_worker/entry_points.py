@@ -75,19 +75,34 @@ def _expire_cache_entries(
         datetime.datetime,
         Option(help="Expire entries created after this date"),
     ],
-    collection_id: Annotated[list[str], Option(help="Collection ID to expire")] = [],
+    collection_id: Annotated[
+        list[str],
+        Option(help="Collection ID to expire"),
+    ] = [],
     all_collections: Annotated[
-        bool, Option("--all-collections", help="Expire all collections")
+        bool,
+        Option(help="Expire all collections"),
     ] = False,
     delete: Annotated[
-        bool, Option("--delete", help="Delete entries to expire")
+        bool,
+        Option(help="Delete entries to expire"),
     ] = False,
     batch_size: Annotated[
-        int | None, Option(help="Group cache entries to expire into batches")
+        int | None,
+        Option(help="Group cache entries to expire into batches"),
     ] = None,
     batch_sleep: Annotated[
-        int, Option(help="Sleep duration after processing each batch")
+        int,
+        Option(
+            help="Sleep duration after processing each batch",
+        ),
     ] = 0,
+    dry_run: Annotated[
+        bool,
+        Option(
+            help="Perform a trial run that doesn't make any changes",
+        ),
+    ] = False,
 ) -> int:
     """Expire cache entries."""
     if (all_collections and collection_id) or not (all_collections or collection_id):
@@ -102,8 +117,9 @@ def _expire_cache_entries(
         delete=delete,
         batch_size=batch_size,
         batch_sleep=batch_sleep,
+        dry_run=dry_run,
     )
-    typer.echo(f"Number of entries expired: {count}")
+    typer.echo(f"Number of entries {'to expire' if dry_run else 'expired'}: {count}")
     return count
 
 
