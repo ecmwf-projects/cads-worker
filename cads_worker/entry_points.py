@@ -29,13 +29,13 @@ class CleanerKwargs(TypedDict):
     lock_validity_period: float
     use_database: bool
     depth: int
-    batch_size: int | None
-    batch_sleep: int
+    partition_size: int | None
+    partition_sleep: int
 
 
 def _cache_cleaner() -> None:
     use_database = strtobool(os.environ.get("USE_DATABASE", "1"))
-    batch_size = os.getenv("BATCH_SIZE")
+    partition_size = os.getenv("PARTITION_SIZE")
     cleaner_kwargs = CleanerKwargs(
         maxsize=int(os.environ.get("MAX_SIZE", 1_000_000_000)),
         method=os.environ.get("METHOD", "LRU"),
@@ -43,8 +43,10 @@ def _cache_cleaner() -> None:
         lock_validity_period=float(os.environ.get("LOCK_VALIDITY_PERIOD", 86400)),
         use_database=use_database,
         depth=int(os.getenv("CACHE_DEPTH", 2)),
-        batch_size=batch_size if batch_size is None else int(batch_size),
-        batch_sleep=int(os.getenv("BATCH_SLEEP", 0)),
+        partition_size=partition_size
+        if partition_size is None
+        else int(partition_size),
+        partition_sleep=int(os.getenv("PARTITION_SLEEP", 0)),
     )
     for cache_files_urlpath in utils.parse_data_volumes_config():
         cacholote.config.set(cache_files_urlpath=cache_files_urlpath)
@@ -87,14 +89,14 @@ def _expire_cache_entries(
         bool,
         Option(help="Delete entries to expire"),
     ] = False,
-    batch_size: Annotated[
+    partition_size: Annotated[
         int | None,
-        Option(help="Group cache entries to expire into batches"),
+        Option(help="Group entries to expire into partitions of this size"),
     ] = None,
-    batch_sleep: Annotated[
-        int,
+    partition_sleep: Annotated[
+        float,
         Option(
-            help="Sleep duration after processing each batch",
+            help="Sleep duration after processing each partition (seconds)",
         ),
     ] = 0,
     dry_run: Annotated[
@@ -115,8 +117,8 @@ def _expire_cache_entries(
         before=_add_tzinfo(before),
         after=_add_tzinfo(after),
         delete=delete,
-        batch_size=batch_size,
-        batch_sleep=batch_sleep,
+        partition_size=partition_size,
+        partition_sleep=partition_sleep,
         dry_run=dry_run,
     )
     typer.echo(f"Number of entries {'to expire' if dry_run else 'expired'}: {count}")
