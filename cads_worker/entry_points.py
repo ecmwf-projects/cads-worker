@@ -29,13 +29,10 @@ class CleanerKwargs(TypedDict):
     lock_validity_period: float
     use_database: bool
     depth: int
-    partition_size: int | None
-    partition_sleep: int
 
 
 def _cache_cleaner() -> None:
     use_database = strtobool(os.environ.get("USE_DATABASE", "1"))
-    partition_size = os.getenv("PARTITION_SIZE")
     cleaner_kwargs = CleanerKwargs(
         maxsize=int(os.environ.get("MAX_SIZE", 1_000_000_000)),
         method=os.environ.get("METHOD", "LRU"),
@@ -43,10 +40,6 @@ def _cache_cleaner() -> None:
         lock_validity_period=float(os.environ.get("LOCK_VALIDITY_PERIOD", 86400)),
         use_database=use_database,
         depth=int(os.getenv("CACHE_DEPTH", 2)),
-        partition_size=partition_size
-        if partition_size is None
-        else int(partition_size),
-        partition_sleep=int(os.getenv("PARTITION_SLEEP", 0)),
     )
     for cache_files_urlpath in utils.parse_data_volumes_config():
         cacholote.config.set(cache_files_urlpath=cache_files_urlpath)
@@ -96,7 +89,7 @@ def _expire_cache_entries(
     partition_sleep: Annotated[
         float,
         Option(
-            help="Sleep duration after processing each partition (seconds)",
+            help="Sleep duration between partitions (seconds)",
         ),
     ] = 0,
     dry_run: Annotated[
