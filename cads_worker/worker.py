@@ -100,15 +100,15 @@ class Context(cacholote.config.Context):
         if job_id is None:
             job_id = self.job_id
         if log_type == "info":
-            self.logger.info(message, job_id=job_id)
+            self.logger.info(message, job_id=job_id, **kwargs)
         if log_type == "debug":
-            self.logger.debug(message, job_id=job_id)
+            self.logger.debug(message, job_id=job_id, **kwargs)
         if log_type == "warn":
-            self.logger.warn(message, job_id=job_id)
+            self.logger.warn(message, job_id=job_id, **kwargs)
         if log_type == "warning":
-            self.logger.warning(message, job_id=job_id)
+            self.logger.warning(message, job_id=job_id, **kwargs)
         if log_type == "critical":
-            self.logger.critical(message, job_id=job_id)
+            self.logger.critical(message, job_id=job_id, **kwargs)
         if WORKER_LOGS_ON_DB:
             cads_broker.database.add_event(
                 event_type=log_type,
@@ -129,9 +129,9 @@ class Context(cacholote.config.Context):
         if job_id is None:
             job_id = self.job_id
         if log_type == "exception":
-            self.logger.exception(message, job_id=job_id)
+            self.logger.exception(message, job_id=job_id, **kwargs)
         if log_type == "error":
-            self.logger.error(message, job_id=job_id)
+            self.logger.error(message, job_id=job_id, **kwargs)
         if WORKER_LOGS_ON_DB:
             cads_broker.database.add_event(
                 event_type=log_type,
