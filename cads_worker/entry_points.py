@@ -79,8 +79,7 @@ def _expire_cache_entries(
         bool, Option("--all-collections", help="Expire all collections")
     ] = False,
     delete: Annotated[
-        bool,
-        Option(help="Delete entries to expire"),
+        bool, Option(help="Delete entries to expire")
     ] = False,
     batch_size: Annotated[
         int | None,
