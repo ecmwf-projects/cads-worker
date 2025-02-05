@@ -75,7 +75,9 @@ def _expire_cache_entries(
         Option(help="Expire entries created after this date"),
     ],
     collection_id: Annotated[list[str], Option(help="Collection ID to expire")] = [],
-    all_collections: Annotated[bool, Option(help="Expire all collections")] = False,
+    all_collections: Annotated[
+        bool, Option("--all-collections", help="Expire all collections")
+    ] = False,
     delete: Annotated[
         bool,
         Option(help="Delete entries to expire"),
