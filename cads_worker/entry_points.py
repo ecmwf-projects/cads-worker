@@ -29,10 +29,13 @@ class CleanerKwargs(TypedDict):
     lock_validity_period: float
     use_database: bool
     depth: int
+    batch_size: int | None
+    batch_delay: float
 
 
 def _cache_cleaner() -> None:
     use_database = strtobool(os.environ.get("USE_DATABASE", "1"))
+    batch_size = os.getenv("BATCH_SIZE")
     cleaner_kwargs = CleanerKwargs(
         maxsize=int(os.environ.get("MAX_SIZE", 1_000_000_000)),
         method=os.environ.get("METHOD", "LRU"),
@@ -40,6 +43,8 @@ def _cache_cleaner() -> None:
         lock_validity_period=float(os.environ.get("LOCK_VALIDITY_PERIOD", 86400)),
         use_database=use_database,
         depth=int(os.getenv("CACHE_DEPTH", 2)),
+        batch_size=batch_size if batch_size is None else int(batch_size),
+        batch_delay=float(os.getenv("BATCH_DELAY", 0)),
     )
     for cache_files_urlpath in utils.parse_data_volumes_config():
         cacholote.config.set(cache_files_urlpath=cache_files_urlpath)
@@ -82,14 +87,14 @@ def _expire_cache_entries(
         bool,
         Option(help="Delete entries to expire"),
     ] = False,
-    partition_size: Annotated[
+    batch_size: Annotated[
         int | None,
-        Option(help="Group entries to expire into partitions of this size"),
+        Option(help="Number of cache entries to process in each batch"),
     ] = None,
-    partition_sleep: Annotated[
+    batch_delay: Annotated[
         float,
         Option(
-            help="Sleep duration between partitions (seconds)",
+            help="Time in seconds to wait between processing consecutive batches",
         ),
     ] = 0,
     dry_run: Annotated[
@@ -110,8 +115,8 @@ def _expire_cache_entries(
         before=_add_tzinfo(before),
         after=_add_tzinfo(after),
         delete=delete,
-        partition_size=partition_size,
-        partition_sleep=partition_sleep,
+        batch_size=batch_size,
+        batch_delay=batch_delay,
         dry_run=dry_run,
     )
     typer.echo(f"Number of entries {'to expire' if dry_run else 'expired'}: {count}")
