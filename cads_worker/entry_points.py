@@ -93,9 +93,7 @@ def _expire_cache_entries(
     ] = 0,
     dry_run: Annotated[
         bool,
-        Option(
-            help="Perform a trial run that doesn't make any changes",
-        ),
+        Option("--dry-run", help="Perform a trial run that doesn't make any changes"),
     ] = False,
 ) -> int:
     """Expire cache entries."""
