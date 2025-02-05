@@ -88,7 +88,7 @@ def _expire_cache_entries(
     batch_delay: Annotated[
         float,
         Option(
-            help="Time in seconds to wait between processing consecutive batches",
+            help="Delay in seconds between processing batches",
         ),
     ] = 0,
     dry_run: Annotated[
