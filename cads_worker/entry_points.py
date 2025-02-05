@@ -88,7 +88,7 @@ def _expire_cache_entries(
     ] = False,
     batch_size: Annotated[
         int | None,
-        Option(help="Number of cache entries to process in each batch"),
+        Option(help="Number of entries to process in each batch"),
     ] = None,
     batch_delay: Annotated[
         float,
