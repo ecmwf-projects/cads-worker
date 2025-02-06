@@ -29,6 +29,8 @@ class CleanerKwargs(TypedDict):
     lock_validity_period: float
     use_database: bool
     depth: int
+    batch_size: int | None
+    batch_delay: float
 
 
 def _cache_cleaner() -> None:
@@ -40,6 +42,8 @@ def _cache_cleaner() -> None:
         lock_validity_period=float(os.environ.get("LOCK_VALIDITY_PERIOD", 86400)),
         use_database=use_database,
         depth=int(os.getenv("CACHE_DEPTH", 2)),
+        batch_size=int(os.getenv("BATCH_SIZE", 0)) or None,
+        batch_delay=float(os.getenv("BATCH_DELAY", 0)),
     )
     for cache_files_urlpath in utils.parse_data_volumes_config():
         cacholote.config.set(cache_files_urlpath=cache_files_urlpath)
@@ -77,6 +81,20 @@ def _expire_cache_entries(
     delete: Annotated[
         bool, Option("--delete", help="Delete entries to expire")
     ] = False,
+    batch_size: Annotated[
+        int | None,
+        Option(help="Number of entries to process in each batch"),
+    ] = None,
+    batch_delay: Annotated[
+        float,
+        Option(
+            help="Delay in seconds between processing batches",
+        ),
+    ] = 0,
+    dry_run: Annotated[
+        bool,
+        Option("--dry-run", help="Perform a trial run that doesn't make any changes"),
+    ] = False,
 ) -> int:
     """Expire cache entries."""
     if (all_collections and collection_id) or not (all_collections or collection_id):
@@ -89,8 +107,11 @@ def _expire_cache_entries(
         before=_add_tzinfo(before),
         after=_add_tzinfo(after),
         delete=delete,
+        batch_size=batch_size,
+        batch_delay=batch_delay,
+        dry_run=dry_run,
     )
-    typer.echo(f"Number of entries expired: {count}")
+    typer.echo(f"Number of entries {'to expire' if dry_run else 'expired'}: {count}")
     return count
 
 
