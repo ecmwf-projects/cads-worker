@@ -1,4 +1,5 @@
 import datetime
+import dask.config
 import distutils.util
 import functools
 import os
@@ -9,6 +10,7 @@ from typing import Any
 import cacholote
 import cads_adaptors
 import cads_broker.database
+import dask
 import distributed.worker
 import structlog
 from distributed import get_worker
@@ -210,6 +212,7 @@ def submit_workflow(
 
     logger.info("Processing job", job_id=job_id)
     collection_id = config.get("collection_id")
+    dask.config.set(scheduler=os.getenv("WORKER_SCHEDULER", "threads"))
     cacholote.config.set(
         logger=LOGGER,
         cache_files_urlpath=cache_files_urlpath,
