@@ -212,7 +212,7 @@ def submit_workflow(
 
     logger.info("Processing job", job_id=job_id)
     collection_id = config.get("collection_id")
-    dask.config.set(scheduler=os.getenv("WORKER_SCHEDULER", "threads"))
+    dask.config.set(scheduler=os.getenv("WORKER_SCHEDULER_TYPE", "processes"))
     cacholote.config.set(
         logger=LOGGER,
         cache_files_urlpath=cache_files_urlpath,
