@@ -19,7 +19,9 @@ config.configure_logger()
 
 LOGGER = structlog.get_logger(__name__)
 
-WORKER_LOGS_ON_DB = distutils.util.strtobool(os.getenv("WORKER_LOGS_ON_DB", "true"))
+WORKER_LOG_LEVEL = os.getenv("WORKER_LOG_LEVEL", "false").lower()
+
+LOG_LEVEL_ORDER = ["debug", "info", "warning", "error", "critical", "false", "no"]
 
 
 @functools.lru_cache
@@ -104,12 +106,10 @@ class Context(cacholote.config.Context):
         if log_type == "debug":
             self.logger.debug(message, job_id=job_id, **kwargs)
         if log_type == "warn":
-            self.logger.warn(message, job_id=job_id, **kwargs)
+            log_type = "warning"
         if log_type == "warning":
             self.logger.warning(message, job_id=job_id, **kwargs)
-        if log_type == "critical":
-            self.logger.critical(message, job_id=job_id, **kwargs)
-        if WORKER_LOGS_ON_DB:
+        if LOG_LEVEL_ORDER.index(log_type) >= LOG_LEVEL_ORDER.index(WORKER_LOG_LEVEL):
             cads_broker.database.add_event(
                 event_type=log_type,
                 request_uid=job_id,
@@ -129,10 +129,12 @@ class Context(cacholote.config.Context):
         if job_id is None:
             job_id = self.job_id
         if log_type == "exception":
-            self.logger.exception(message, job_id=job_id, **kwargs)
+            log_type = "error"
         if log_type == "error":
             self.logger.error(message, job_id=job_id, **kwargs)
-        if WORKER_LOGS_ON_DB:
+        if log_type == "critical":
+            self.logger.critical(message, job_id=job_id, **kwargs)
+        if LOG_LEVEL_ORDER.index(log_type) >= LOG_LEVEL_ORDER.index(WORKER_LOG_LEVEL):
             cads_broker.database.add_event(
                 event_type=log_type,
                 request_uid=job_id,
@@ -160,7 +162,7 @@ class Context(cacholote.config.Context):
         self.add_stdout(*args, log_type="warning", **kwargs)
 
     def critical(self, *args, **kwargs):
-        self.add_stdout(*args, log_type="critical", **kwargs)
+        self.add_stderr(*args, log_type="critical", **kwargs)
 
     def error(self, *args, **kwargs):
         self.add_stderr(*args, log_type="error", **kwargs)
