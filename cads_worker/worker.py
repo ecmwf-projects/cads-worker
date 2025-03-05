@@ -1,6 +1,7 @@
 import datetime
 import distutils.util
 import functools
+import logging
 import os
 import random
 import socket
@@ -19,9 +20,10 @@ config.configure_logger()
 
 LOGGER = structlog.get_logger(__name__)
 
-WORKER_LOG_LEVEL = os.getenv("WORKER_LOG_LEVEL", "false").lower()
-
-LOG_LEVEL_ORDER = ["debug", "info", "warning", "error", "critical", "false", "no"]
+WORKER_LOG_LEVEL = os.getenv("WORKER_LOG_LEVEL", "false").upper()
+LEVELS_MAPPING = logging.getLevelNamesMapping()
+# 60 is above all the levels. it means no log
+WORKER_LOG_LEVEL_NAME = LEVELS_MAPPING.get(WORKER_LOG_LEVEL, 60)
 
 
 @functools.lru_cache
@@ -94,22 +96,22 @@ class Context(cacholote.config.Context):
     def add_stdout(
         self,
         message: str,
-        log_type: str = "info",
+        log_type: str = "INFO",
         session: Any = None,
         job_id: str | None = None,
         **kwargs,
     ) -> None:
         if job_id is None:
             job_id = self.job_id
-        if log_type == "info":
+        if log_type == "INFO":
             self.logger.info(message, job_id=job_id, **kwargs)
-        if log_type == "debug":
+        if log_type == "DEBUG":
             self.logger.debug(message, job_id=job_id, **kwargs)
-        if log_type == "warn":
-            log_type = "warning"
-        if log_type == "warning":
+        if log_type == "WARN":
+            self.logger.warn(message, job_id=job_id, **kwargs)
+        if log_type == "WARNING":
             self.logger.warning(message, job_id=job_id, **kwargs)
-        if LOG_LEVEL_ORDER.index(log_type) >= LOG_LEVEL_ORDER.index(WORKER_LOG_LEVEL):
+        if LEVELS_MAPPING.get(log_type, 70) >= WORKER_LOG_LEVEL_NAME:
             cads_broker.database.add_event(
                 event_type=log_type,
                 request_uid=job_id,
@@ -121,20 +123,20 @@ class Context(cacholote.config.Context):
     def add_stderr(
         self,
         message: str,
-        log_type: str = "exception",
+        log_type: str = "EXCEPTION",
         session: Any = None,
         job_id: str | None = None,
         **kwargs,
     ) -> None:
         if job_id is None:
             job_id = self.job_id
-        if log_type == "exception":
-            log_type = "error"
-        if log_type == "error":
+        if log_type == "EXCEPTION":
+            log_type = "ERROR"
+        if log_type == "ERROR":
             self.logger.error(message, job_id=job_id, **kwargs)
-        if log_type == "critical":
+        if log_type == "CRITICAL":
             self.logger.critical(message, job_id=job_id, **kwargs)
-        if LOG_LEVEL_ORDER.index(log_type) >= LOG_LEVEL_ORDER.index(WORKER_LOG_LEVEL):
+        if LEVELS_MAPPING.get(log_type, 70) >= WORKER_LOG_LEVEL_NAME:
             cads_broker.database.add_event(
                 event_type=log_type,
                 request_uid=job_id,
@@ -150,25 +152,25 @@ class Context(cacholote.config.Context):
         self.add_stdout(*args, log_type="upload", **kwargs)
 
     def info(self, *args, **kwargs):
-        self.add_stdout(*args, log_type="info", **kwargs)
+        self.add_stdout(*args, log_type="INFO", **kwargs)
 
     def debug(self, *args, **kwargs):
-        self.add_stdout(*args, log_type="debug", **kwargs)
+        self.add_stdout(*args, log_type="DEBUG", **kwargs)
 
     def warn(self, *args, **kwargs):
-        self.add_stdout(*args, log_type="warn", **kwargs)
+        self.add_stdout(*args, log_type="WARN", **kwargs)
 
     def warning(self, *args, **kwargs):
-        self.add_stdout(*args, log_type="warning", **kwargs)
+        self.add_stdout(*args, log_type="WARNING", **kwargs)
 
     def critical(self, *args, **kwargs):
-        self.add_stderr(*args, log_type="critical", **kwargs)
+        self.add_stderr(*args, log_type="CRITICAL", **kwargs)
 
     def error(self, *args, **kwargs):
-        self.add_stderr(*args, log_type="error", **kwargs)
+        self.add_stderr(*args, log_type="ERROR", **kwargs)
 
     def exception(self, *args, **kwargs):
-        self.add_stderr(*args, log_type="exception", **kwargs)
+        self.add_stderr(*args, log_type="EXCEPTION", **kwargs)
 
 
 def submit_workflow(
