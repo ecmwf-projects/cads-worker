@@ -23,7 +23,7 @@ LOGGER = structlog.get_logger(__name__)
 WORKER_LOG_LEVEL = os.getenv("WORKER_LOG_LEVEL", "false").upper()
 LEVELS_MAPPING = logging.getLevelNamesMapping()
 # 60 is above all the levels. it means no log
-WORKER_LOG_LEVEL_NAME = LEVELS_MAPPING.get(WORKER_LOG_LEVEL, 60)
+WORKER_LOG_LEVEL_INT = LEVELS_MAPPING.get(WORKER_LOG_LEVEL, 60)
 
 
 @functools.lru_cache
@@ -103,15 +103,9 @@ class Context(cacholote.config.Context):
     ) -> None:
         if job_id is None:
             job_id = self.job_id
-        if log_type == "INFO":
-            self.logger.info(message, job_id=job_id, **kwargs)
-        if log_type == "DEBUG":
-            self.logger.debug(message, job_id=job_id, **kwargs)
-        if log_type == "WARN":
-            self.logger.warn(message, job_id=job_id, **kwargs)
-        if log_type == "WARNING":
-            self.logger.warning(message, job_id=job_id, **kwargs)
-        if LEVELS_MAPPING.get(log_type, 70) >= WORKER_LOG_LEVEL_NAME:
+        log_level = LEVELS_MAPPING.get(log_type, 10)
+        self.logger.log(log_level, message, job_id=job_id, **kwargs)
+        if log_level >= WORKER_LOG_LEVEL_INT:
             cads_broker.database.add_event(
                 event_type=log_type,
                 request_uid=job_id,
@@ -130,13 +124,9 @@ class Context(cacholote.config.Context):
     ) -> None:
         if job_id is None:
             job_id = self.job_id
-        if log_type == "EXCEPTION":
-            log_type = "ERROR"
-        if log_type == "ERROR":
-            self.logger.error(message, job_id=job_id, **kwargs)
-        if log_type == "CRITICAL":
-            self.logger.critical(message, job_id=job_id, **kwargs)
-        if LEVELS_MAPPING.get(log_type, 70) >= WORKER_LOG_LEVEL_NAME:
+        log_level = LEVELS_MAPPING.get(log_type, 10)
+        self.logger.log(log_level, message, job_id=job_id, **kwargs)
+        if log_level >= WORKER_LOG_LEVEL_INT:
             cads_broker.database.add_event(
                 event_type=log_type,
                 request_uid=job_id,
