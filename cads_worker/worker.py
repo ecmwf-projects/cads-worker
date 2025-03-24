@@ -1,5 +1,4 @@
 import datetime
-import dask.config
 import distutils.util
 import functools
 import logging
@@ -12,6 +11,7 @@ import cacholote
 import cads_adaptors
 import cads_broker.database
 import dask
+import dask.config
 import distributed.worker
 import structlog
 from distributed import get_worker
