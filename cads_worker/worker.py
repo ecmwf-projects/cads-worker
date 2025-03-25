@@ -22,10 +22,7 @@ config.configure_logger()
 
 LOGGER = structlog.get_logger(__name__)
 
-WORKER_LOG_LEVEL = os.getenv("WORKER_LOG_LEVEL", "false").upper()
 LEVELS_MAPPING = logging.getLevelNamesMapping()
-# 60 is above all the levels. it means no log
-WORKER_LOG_LEVEL_INT = LEVELS_MAPPING.get(WORKER_LOG_LEVEL, 60)
 
 
 @functools.lru_cache
@@ -58,6 +55,11 @@ class Context(cacholote.config.Context):
         self.logger = logger if logger is not None else LOGGER
         self.write_type = write_type
         self.messages_buffer = ""
+        # 60 is above all the levels. it means no log
+        # get the log level at instance creation time so we don't need to restart the workers to change it
+        self.worker_log_level = LEVELS_MAPPING.get(
+            os.getenv("WORKER_LOG_LEVEL", "false").upper(), 60
+        )
 
     def write(self, message: str) -> None:
         """Use the logger as a file-like object. Needed by tqdm progress bar."""
@@ -107,7 +109,7 @@ class Context(cacholote.config.Context):
             job_id = self.job_id
         log_level = LEVELS_MAPPING.get(log_type, 10)
         self.logger.log(log_level, message, job_id=job_id, **kwargs)
-        if log_level >= WORKER_LOG_LEVEL_INT:
+        if log_level >= self.worker_log_level:
             cads_broker.database.add_event(
                 event_type=log_type,
                 request_uid=job_id,
@@ -128,7 +130,7 @@ class Context(cacholote.config.Context):
             job_id = self.job_id
         log_level = LEVELS_MAPPING.get(log_type, 10)
         self.logger.log(log_level, message, job_id=job_id, **kwargs)
-        if log_level >= WORKER_LOG_LEVEL_INT:
+        if log_level >= self.worker_log_level:
             cads_broker.database.add_event(
                 event_type=log_type,
                 request_uid=job_id,
