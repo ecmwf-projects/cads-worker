@@ -1,5 +1,4 @@
 import datetime
-import distutils.util
 import functools
 import logging
 import os
