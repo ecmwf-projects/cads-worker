@@ -17,7 +17,7 @@ from distributed import get_worker
 
 from . import config, utils
 
-config.configure_logger()
+config.configure_logger(os.getenv("WORKER_LOG_LEVEL", "NOT_SET").upper())
 
 LOGGER = structlog.get_logger(__name__)
 
