@@ -15,7 +15,7 @@ COPY environment-dask.yml /src/environment-dask.yml
 
 RUN conda install -y -n base -c conda-forge gitpython typer conda-merge
 
-COPY ./worker/environment.yml /src/environment.yml
+#COPY ./worker/environment.yml /src/environment.yml
 
 SHELL ["/bin/bash", "-c"]
 
