@@ -1,0 +1,25 @@
+name: Build cads-worker docker image
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - cicdRefactor
+    tags:
+      - "v*"
+    pull_request:
+      branches:
+        - main
+
+
+
+jobs:
+  build_docker_image:
+    name: Build docker
+    uses: ecmwf-projects/cads-build-farm/.github/workflows/docker-build.yaml@helm-chart-pipeline
+    with:
+      dockerfile: 'Worker.Dockerfile'
+      chart-repo: 'ecmwf/dss-compute-layer-chart'
+      enable-package-update: false
+    secrets: inherit
