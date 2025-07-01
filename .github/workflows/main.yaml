@@ -22,6 +22,4 @@ jobs:
       dockerfile: 'Worker.Dockerfile'
       chart-repo: 'ecmwf/dss-compute-layer-chart'
       enable-package-update: false
-      repositories: ""
-      package-ref: ""
     secrets: inherit
