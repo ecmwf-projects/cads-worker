@@ -8,9 +8,9 @@ on:
       - automatic_package_update
     tags:
       - "v*"
-    pull_request:
-      branches:
-        - main
+  pull_request:
+    branches:
+      - main
 
 
 
