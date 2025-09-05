@@ -1,0 +1,23 @@
+name: Build Worker docker image
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  pull_request:
+    branches:
+      - main
+
+
+jobs:
+  build_docker_image:
+    name: Build docker image
+    uses: ecmwf-projects/cads-build-farm/.github/workflows/docker-build.yaml@main
+    with:
+      dockerfile: 'Worker.Dockerfile'
+      chart-repo: 'ecmwf/dss-compute-layer-chart'
+      package-ref: "CADS_WORKER_REF"
+    secrets: inherit
