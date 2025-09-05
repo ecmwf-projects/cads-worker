@@ -1,0 +1,9 @@
+# CADS repositories versions
+CACHOLOTE_REF="main"
+CADS_ADAPTORS_REF="main"
+DATAPI_REF="main"
+CADS_BROKER_REF="main"
+CADS_COMMON_REF="main"
+CADS_MARS_SERVER_REF="main"
+CDS_COMMON_REF="main"
+CDSCOMPUTE_REF="main"
