@@ -1,11 +1,10 @@
-name: Build cads-worker docker image
+name: Build Worker docker image
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-      - automatic_package_update
     tags:
       - "v*"
   pull_request:
@@ -13,13 +12,13 @@ on:
       - main
 
 
-
 jobs:
   build_docker_image:
-    name: Build docker
-    uses: ecmwf-projects/cads-build-farm/.github/workflows/docker-build.yaml@helm-chart-pipeline
+    name: Build docker image
+    uses: ecmwf-projects/cads-build-farm/.github/workflows/docker-build.yaml@main
     with:
       dockerfile: 'Worker.Dockerfile'
       chart-repo: 'ecmwf/dss-compute-layer-chart'
-      enable-package-update: false
+      package-ref: "CADS_WORKER_REF"
+      image-name: worker
     secrets: inherit

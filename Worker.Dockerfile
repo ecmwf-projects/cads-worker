@@ -9,13 +9,13 @@ WORKDIR /src
 COPY ./git-*-repos.py /src/
 
 COPY environment.${MODE} /src/environment
-COPY default-enviroment.yaml /src/environment.yml
 COPY environment-common.yml /src/environment-common.yml
 COPY environment-dask.yml /src/environment-dask.yml
+COPY . /src/cads-worker
 
 RUN conda install -y -n base -c conda-forge gitpython typer conda-merge
 
-#COPY ./worker/environment.yml /src/environment.yml
+COPY ./worker/environment.yml /src/environment.yml
 
 SHELL ["/bin/bash", "-c"]
 
@@ -28,7 +28,6 @@ RUN set -a && source environment \
     cads-broker \
     cads-common \
     cads-mars-server \
-    cads-worker \
     --bitbucket cds-common@cds-common \
     --bitbucket cdscompute@cdscompute
 

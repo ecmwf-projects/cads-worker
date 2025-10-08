@@ -4,7 +4,7 @@ import sys
 import structlog
 
 
-def configure_logger(log_level) -> None:
+def configure_logger(log_level="INFO") -> None:
     """Configure the logging module.
 
     This function configures the logging module to log in rfc5424 format.

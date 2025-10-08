@@ -6,6 +6,7 @@ Utility functions for CADS Dask worker.
 :caption: 'Contents:'
 :maxdepth: 2
 
+README.md
 API Reference <_api/cads_worker/index>
 ```
 
