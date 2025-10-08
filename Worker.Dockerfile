@@ -15,8 +15,6 @@ COPY . /src/cads-worker
 
 RUN conda install -y -n base -c conda-forge gitpython typer conda-merge
 
-COPY ./worker/environment.yml /src/environment.yml
-
 SHELL ["/bin/bash", "-c"]
 
 RUN set -a && source environment \
@@ -34,7 +32,6 @@ RUN set -a && source environment \
 RUN conda run -n base conda-merge \
     /src/environment-common.yml \
     /src/environment-dask.yml \
-    /src/environment.yml \
     /src/cacholote/environment.yml \
     /src/cads-adaptors/environment.yml \
     /src/cads-broker/environment.yml \
