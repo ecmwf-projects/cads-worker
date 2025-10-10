@@ -9,5 +9,12 @@ channels:
 # DO NOT EDIT ABOVE THIS LINE, ADD DEPENDENCIES BELOW AS SHOWN IN THE EXAMPLE
 dependencies:
 - distributed
+- psycopg2
+# See: https://github.com/fsspec/s3fs/pull/910
+- s3fs!=2024.10.0
+- s3fs>=2023.12.2
 - structlog
 - typer
+- zarr
+- pip:
+  - sqlalchemy_json
