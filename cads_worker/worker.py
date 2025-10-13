@@ -26,6 +26,7 @@ LEVELS_MAPPING = logging.getLevelNamesMapping()
 
 DB_CONNECTION_RETRIES = int(os.getenv("WORKER_DB_CONNECTION_RETRIES", 3))
 
+
 @functools.lru_cache
 def create_session_maker() -> cads_broker.database.sa.orm.sessionmaker:
     return cads_broker.database.ensure_session_obj(None)
@@ -36,7 +37,6 @@ def ensure_session(func):
     def wrapper(self, *args, session=None, **kwargs):
         retries = 1
         while retries <= DB_CONNECTION_RETRIES:
-
             try:
                 close_session = False
                 # create a new session if not provided
