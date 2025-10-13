@@ -1,12 +1,14 @@
+from unittest.mock import patch
+
 import pytest
 from sqlalchemy.orm import Session
-from unittest.mock import Mock, patch
 
 from cads_worker import worker
 
 
 def mock_session_maker():
     return Session()
+
 
 def test_ensure_session_decorator():
     # Test case 1: when session is None
@@ -15,8 +17,9 @@ def test_ensure_session_decorator():
         assert isinstance(session, Session)
         return session
 
-    with patch('cads_worker.worker.create_session_maker', return_value=mock_session_maker):
-
+    with patch(
+        "cads_worker.worker.create_session_maker", return_value=mock_session_maker
+    ):
         result = sample_function(self=None)
         assert isinstance(result, Session)
 
@@ -39,8 +42,9 @@ def test_ensure_session_decorator_nested():
 
         return inner_function(self=None, session=session)
 
-
-    with patch('cads_worker.worker.create_session_maker', return_value=mock_session_maker):
+    with patch(
+        "cads_worker.worker.create_session_maker", return_value=mock_session_maker
+    ):
         result = outer_function(self=None)
     assert isinstance(result, Session)
     result.close()
@@ -55,7 +59,9 @@ def test_ensure_session_decorator_error():
     with pytest.raises(ValueError):
         failing_function(self=None)
 
+
 call_count = 1
+
 
 def test_ensure_session_retry():
     # Test retries
@@ -65,9 +71,13 @@ def test_ensure_session_retry():
     @worker.ensure_session
     def failing_function(self, session=None):
         print("failing function called")
-        raise worker.cads_broker.database.sa.exc.OperationalError("Simulated DB error", None, None)
+        raise worker.cads_broker.database.sa.exc.OperationalError(
+            "Simulated DB error", None, None
+        )
 
-    with patch('cads_worker.worker.create_session_maker', return_value=mock_session_maker):
+    with patch(
+        "cads_worker.worker.create_session_maker", return_value=mock_session_maker
+    ):
         with pytest.raises(worker.cads_broker.database.sa.exc.OperationalError):
             # This should raise after max retries
             failing_function(self=context)
@@ -80,11 +90,15 @@ def test_ensure_session_retry():
         if call_count < 3:
             print("failing function called - retries:", call_count)
             call_count += 1
-            raise worker.cads_broker.database.sa.exc.OperationalError("Simulated DB error", None, None)
+            raise worker.cads_broker.database.sa.exc.OperationalError(
+                "Simulated DB error", None, None
+            )
         else:
             print("successful function called - retries:", call_count)
             return session
 
-    with patch('cads_worker.worker.create_session_maker', return_value=mock_session_maker):
+    with patch(
+        "cads_worker.worker.create_session_maker", return_value=mock_session_maker
+    ):
         result = successful_function(self=context)
     assert isinstance(result, Session)
