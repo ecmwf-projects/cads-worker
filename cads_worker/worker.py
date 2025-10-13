@@ -4,6 +4,7 @@ import logging
 import os
 import random
 import socket
+import time
 from typing import Any
 
 import cacholote
@@ -23,6 +24,7 @@ LOGGER = structlog.get_logger(__name__)
 
 LEVELS_MAPPING = logging.getLevelNamesMapping()
 
+DB_CONNECTION_RETRIES = int(os.getenv("WORKER_DB_CONNECTION_RETRIES", 3))
 
 @functools.lru_cache
 def create_session_maker() -> cads_broker.database.sa.orm.sessionmaker:
@@ -32,13 +34,35 @@ def create_session_maker() -> cads_broker.database.sa.orm.sessionmaker:
 def ensure_session(func):
     @functools.wraps(func)
     def wrapper(self, *args, session=None, **kwargs):
-        close_session = False
-        if session is None:
-            session = create_session_maker()()
-            close_session = True
-        func(self, *args, session=session, **kwargs)
-        if close_session:
-            session.close()
+        retries = 1
+        while retries <= DB_CONNECTION_RETRIES:
+
+            try:
+                close_session = False
+                # create a new session if not provided
+                if session is None:
+                    session = create_session_maker()()
+                    close_session = True
+                # run the function
+                result = func(self, *args, session=session, **kwargs)
+                # close the session if we created it
+                if close_session:
+                    session.close()
+                return result
+            except cads_broker.database.sa.exc.OperationalError as e:
+                exception = e
+                retries += 1
+                self.logger.warning(
+                    f"Database operation failed. Retrying {retries}/{DB_CONNECTION_RETRIES}...",
+                    error=str(e),
+                )
+                # close the session anyway because it could be broken
+                session.close()
+                session = None
+                time.sleep(os.getenv("WORKER_DB_CONNECTION_RETRY_SLEEP", 2))
+
+        self.logger.error("Max retries reached. Aborting operation.")
+        raise exception
 
     return wrapper
 
