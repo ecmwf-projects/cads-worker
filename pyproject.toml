@@ -29,8 +29,8 @@ name = "cads-worker"
 readme = "README.md"
 
 [project.entry-points."fsspec.specs"]
-cci1 = "filesystems:CCI1FileSystem"
-cci2 = "filesystems:CCI2FileSystem"
+cci1 = "cads_worker.filesystems:CCI1FileSystem"
+cci2 = "cads_worker.filesystems:CCI2FileSystem"
 
 [project.scripts]
 cache-cleaner = "cads_worker.entry_points:cache_cleaner"
