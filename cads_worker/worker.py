@@ -13,10 +13,8 @@ import cads_broker.database
 import dask
 import dask.config
 import distributed.worker
-import fsspec
 import structlog
 from distributed import get_worker
-from fsspec.implementations.local import LocalFileSystem
 
 from . import config, utils
 
@@ -27,9 +25,6 @@ LOGGER = structlog.get_logger(__name__)
 LEVELS_MAPPING = logging.getLevelNamesMapping()
 
 DB_CONNECTION_RETRIES = int(os.getenv("WORKER_DB_CONNECTION_RETRIES", 3))
-
-fsspec.register_implementation("cci1", LocalFileSystem)
-fsspec.register_implementation("cci2", LocalFileSystem)
 
 
 @functools.lru_cache
