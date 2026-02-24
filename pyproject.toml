@@ -18,7 +18,6 @@ dependencies = [
   "cacholote",
   "cads-adaptors@git+https://github.com/ecmwf-projects/cads-adaptors.git",
   "distributed",
-  "fsspec",
   "structlog",
   "typer"
 ]
@@ -27,10 +26,6 @@ dynamic = ["version"]
 license = {file = "LICENSE"}
 name = "cads-worker"
 readme = "README.md"
-
-[project.entry-points."fsspec.specs"]
-cci1 = "fsspec.implementations.local:LocalFileSystem"
-cci2 = "fsspec.implementations.local:LocalFileSystem"
 
 [project.scripts]
 cache-cleaner = "cads_worker.entry_points:cache_cleaner"
