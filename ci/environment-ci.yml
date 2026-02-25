@@ -18,3 +18,4 @@ dependencies:
 - pip:
   - git+https://github.com/ecmwf-projects/cacholote
   - git+https://github.com/ecmwf-projects/cads-adaptors
+  - git+https://github.com/ecmwf-projects/cads-broker
