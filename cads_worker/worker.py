@@ -6,6 +6,7 @@ import random
 import socket
 import time
 from typing import Any
+import yaml
 
 import cacholote
 import cads_adaptors
@@ -73,16 +74,15 @@ class Context(cacholote.config.Context):
         job_id: str | None = None,
         logger: Any | None = None,
         write_type: str = "stdout",
+        worker_log_level_to_stdout: int = 10,
+        worker_log_level_to_db: int = 60,
     ):
         self.job_id = job_id
         self.logger = logger if logger is not None else LOGGER
         self.write_type = write_type
         self.messages_buffer = ""
-        # 60 is above all the levels. it means no log
-        # get the log level at instance creation time so we don't need to restart the workers to change it
-        self.worker_log_level = LEVELS_MAPPING.get(
-            os.getenv("WORKER_LOG_LEVEL", "false").upper(), 60
-        )
+        self.worker_log_level_to_stdout = worker_log_level_to_stdout
+        self.worker_log_level_to_db = worker_log_level_to_db
 
     def write(self, message: str) -> None:
         """Use the logger as a file-like object. Needed by tqdm progress bar."""
@@ -131,8 +131,11 @@ class Context(cacholote.config.Context):
         if job_id is None:
             job_id = self.job_id
         log_level = LEVELS_MAPPING.get(log_type, 10)
-        self.logger.log(log_level, message, job_id=job_id, **kwargs)
-        if log_level >= self.worker_log_level:
+
+        if log_level >= self.worker_log_level_to_stdout:
+            self.logger.log(log_level, message, job_id=job_id, **kwargs)
+
+        if log_level >= self.worker_log_level_to_db:
             cads_broker.database.add_event(
                 event_type=log_type,
                 request_uid=job_id,
@@ -152,8 +155,11 @@ class Context(cacholote.config.Context):
         if job_id is None:
             job_id = self.job_id
         log_level = LEVELS_MAPPING.get(log_type, 10)
-        self.logger.log(log_level, message, job_id=job_id, **kwargs)
-        if log_level >= self.worker_log_level:
+
+        if log_level >= self.worker_log_level_to_stdout:
+            self.logger.log(log_level, message, job_id=job_id, **kwargs)
+
+        if log_level >= self.worker_log_level_to_db:
             cads_broker.database.add_event(
                 event_type=log_type,
                 request_uid=job_id,
@@ -189,6 +195,62 @@ class Context(cacholote.config.Context):
     def exception(self, *args, **kwargs):
         self.add_stderr(*args, log_type="EXCEPTION", **kwargs)
 
+    def set_worker_log_level_to_stdout(self, worker_log_level_to_stdout):
+        self.worker_log_level_to_stdout = worker_log_level_to_stdout
+
+    def set_worker_log_level_to_db(self, worker_log_level_to_db):
+        self.worker_log_level_to_db = worker_log_level_to_db
+
+
+DEFAULT_LOG_SWITCHES_CONFIG_FILE = "/etc/log-config/log-switches.yaml"
+def get_log_switches_config():
+    log_switches_config_file = os.getenv("LOG_SWITCHES_CONFIG_FILE", DEFAULT_LOG_SWITCHES_CONFIG_FILE)
+
+    if os.path.exists(log_switches_config_file):
+        with open(log_switches_config_file, 'r') as f:
+            log_switches_config = yaml.load(f, Loader=yaml.SafeLoader)
+    else:
+        raise Exception(
+            "MARS servers cannot be found, this is an error at the system level."
+        )
+    return log_switches_config
+
+
+DEFAULT_CONFIG = {"stdout": "info", "db": "nothing"}
+def parse_config(config):
+    if isinstance(config,str):
+        worker_log_level_to_stdout = config
+        worker_log_level_to_db = config
+    else:
+        worker_log_level_to_stdout = config.get("stdout", DEFAULT_CONFIG["stdout"])
+        worker_log_level_to_db = config.get("db", DEFAULT_CONFIG["db"])
+
+    worker_log_level_to_stdout = LEVELS_MAPPING.get(worker_log_level_to_stdout.upper(), 10)
+    worker_log_level_to_db = LEVELS_MAPPING.get(worker_log_level_to_db.upper(), 60)
+
+    return worker_log_level_to_stdout, worker_log_level_to_db
+
+
+def determine_log_levels(adaptor, dataset) -> tuple[int,int]:
+    log_switches_config = get_log_switches_config()
+
+    config_for_dataset =  log_switches_config.get("datasets", {}).get(dataset)
+    if config_for_dataset:
+        worker_log_level_to_stdout, worker_log_level_to_db = parse_config(config_for_dataset)
+    else:
+        config_for_adaptor =  log_switches_config.get("adaptors", {}).get(adaptor)
+        if config_for_adaptor:
+            worker_log_level_to_stdout, worker_log_level_to_db = parse_config(config_for_adaptor)
+        else:
+            config_for_dataset =  log_switches_config.get("datasets", {}).get("default")
+            if config_for_dataset:
+                worker_log_level_to_stdout, worker_log_level_to_db = parse_config(config_for_dataset)
+            else:
+                config_for_adaptor =  log_switches_config.get("adaptors", {}).get("default", {})
+                worker_log_level_to_stdout, worker_log_level_to_db = parse_config(config_for_adaptor)
+
+    return worker_log_level_to_stdout, worker_log_level_to_db
+
 
 def submit_workflow(
     entry_point: str,
@@ -220,6 +282,12 @@ def submit_workflow(
 
     structlog.contextvars.bind_contextvars(event_type="DATASET_COMPUTE", job_id=job_id)
 
+    collection_id = config.get("collection_id")
+    worker_log_level_to_stdout,worker_log_level_to_db = determine_log_levels(entry_point, collection_id)
+    logger.info(f"----------> Calling adaptor {entry_point} for dataset {collection_id}...")
+    context.set_worker_log_level_to_stdout(worker_log_level_to_stdout)
+    context.set_worker_log_level_to_db(worker_log_level_to_db)
+
     cache_files_urlpath = random.choice(utils.parse_data_volumes_config())
     depth = int(os.getenv("CACHE_DEPTH", 1))
     if depth == 2:
@@ -230,7 +298,6 @@ def submit_workflow(
         context.warn(f"CACHE_DETPH={depth} is not supported.")
 
     logger.info("Processing job", job_id=job_id)
-    collection_id = config.get("collection_id")
     dask.config.set(scheduler=os.getenv("WORKER_SCHEDULER_TYPE", "single-threaded"))
     cacholote.config.set(
         logger=LOGGER,
