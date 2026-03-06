@@ -252,12 +252,7 @@ def submit_workflow(
                     cache_tmp_path=cache_tmp_path,
                     **config,
                 )
-                request = {k: request[k] for k in sorted(request.keys())}
-                cached_retrieve = cacholote.cacheable(
-                    adaptor.retrieve,
-                    collection_id=collection_id,
-                )
-                result = cached_retrieve(request=request)
+                result = adaptor.retrieve(request)
     except Exception as err:
         logger.exception(job_id=job_id, event_type="EXCEPTION")
         context.add_user_visible_error(f"The job failed with: {err.__class__.__name__}")
