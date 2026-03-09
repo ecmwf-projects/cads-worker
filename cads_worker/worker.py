@@ -198,7 +198,7 @@ def submit_workflow(
     form: dict[str, Any] = {},
     metadata: dict[str, Any] = {},
 ):
-    job_id = distributed.worker.thread_state.key  # type: ignore
+    job_id = distributed.worker.thread_state.key.strip("request-")  # type: ignore
     # send event with worker address and pid of the job
     worker = get_worker()
     worker.log_event(job_id, {"worker": worker.address, "pid": os.getpid()})
