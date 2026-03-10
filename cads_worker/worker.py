@@ -1,5 +1,6 @@
 import datetime
 import functools
+import json
 import logging
 import os
 import random
@@ -201,10 +202,15 @@ def submit_workflow(
     job_id = distributed.worker.thread_state.key.removeprefix("request-")  # type: ignore
     # send event with worker address and pid of the job
     worker = get_worker()
-    worker.log_event(job_id, {"worker": worker.address, "pid": os.getpid()})
     logger = LOGGER.bind(job_id=job_id)
     context = Context(job_id=job_id, logger=logger)
     with context.session_maker() as session:
+        cads_broker.database.add_event(
+            event_type="worker_pid",
+            request_uid=job_id,
+            message=json.dumps({"worker": worker.address, "pid": os.getpid()}),
+            session=session,
+        )
         cads_broker.database.add_event(
             event_type="worker_name",
             request_uid=job_id,
