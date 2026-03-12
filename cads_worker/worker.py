@@ -241,6 +241,8 @@ def submit_workflow(
         tag=collection_id,
     )
     fs, dirname = cacholote.utils.get_cache_files_fs_dirname()
+    if "s3" in fs.protocol:
+        cacholote.config.set(io_chmod="public-read")
 
     adaptor_class = cads_adaptors.get_adaptor_class(entry_point, setup_code)
     try:
@@ -264,8 +266,6 @@ def submit_workflow(
         context.error(f"{err.__class__.__name__}: {str(err)}")
         raise
 
-    if "s3" in fs.protocol:
-        fs.chmod(result.result["args"][0]["file:local_path"], acl="public-read")
     with context.session_maker() as session:
         request = cads_broker.database.set_request_cache_id(
             request_uid=job_id,
