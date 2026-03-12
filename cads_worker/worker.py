@@ -13,6 +13,7 @@ import cads_broker.database
 import dask
 import dask.config
 import distributed.worker
+import fsspec.implementations.local
 import structlog
 from distributed import get_worker
 
@@ -244,7 +245,11 @@ def submit_workflow(
     adaptor_class = cads_adaptors.get_adaptor_class(entry_point, setup_code)
     try:
         with utils.enter_tmp_working_dir() as working_dir:
-            base_dir = dirname if "file" in fs.protocol else working_dir
+            base_dir = (
+                dirname
+                if isinstance(fs, fsspec.implementations.local.LocalFileSystem)
+                else working_dir
+            )
             with utils.make_cache_tmp_path(base_dir) as cache_tmp_path:
                 adaptor = adaptor_class(
                     form=form,
@@ -259,7 +264,7 @@ def submit_workflow(
         context.error(f"{err.__class__.__name__}: {str(err)}")
         raise
 
-    if "s3" in fs.protocol:
+    if result.counter == 1 and "s3" in fs.protocol:
         fs.chmod(result.result["args"][0]["file:local_path"], acl="public-read")
     with context.session_maker() as session:
         request = cads_broker.database.set_request_cache_id(

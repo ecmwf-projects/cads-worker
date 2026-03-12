@@ -17,7 +17,9 @@ classifiers = [
 dependencies = [
   "cacholote",
   "cads-adaptors@git+https://github.com/ecmwf-projects/cads-adaptors.git",
+  "cads-broker@git+https://github.com/ecmwf-projects/cads-broker.git",
   "distributed",
+  "fsspec",
   "structlog",
   "typer"
 ]
@@ -26,6 +28,10 @@ dynamic = ["version"]
 license = {file = "LICENSE"}
 name = "cads-worker"
 readme = "README.md"
+
+[project.entry-points."fsspec.specs"]
+cci1 = "cads_worker.filesystems:CCI1FileSystem"
+cci2 = "cads_worker.filesystems:CCI2FileSystem"
 
 [project.scripts]
 cache-cleaner = "cads_worker.entry_points:cache_cleaner"
