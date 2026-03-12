@@ -1,5 +1,6 @@
 import datetime
 import functools
+import json
 import logging
 import os
 import random
@@ -9,6 +10,7 @@ from typing import Any
 
 import cacholote
 import cads_adaptors
+import cads_broker.config
 import cads_broker.database
 import dask
 import dask.config
@@ -25,6 +27,8 @@ LOGGER = structlog.get_logger(__name__)
 LEVELS_MAPPING = logging.getLevelNamesMapping()
 
 DB_CONNECTION_RETRIES = int(os.getenv("WORKER_DB_CONNECTION_RETRIES", 3))
+
+BROKER_CONFIG = cads_broker.config.BrokerConfig()
 
 
 @functools.lru_cache
@@ -198,13 +202,20 @@ def submit_workflow(
     form: dict[str, Any] = {},
     metadata: dict[str, Any] = {},
 ):
-    job_id = distributed.worker.thread_state.key  # type: ignore
+    job_id = distributed.worker.thread_state.key.removeprefix(
+        f"{BROKER_CONFIG.broker_request_prefix}-"
+    )  # type: ignore
     # send event with worker address and pid of the job
     worker = get_worker()
-    worker.log_event(job_id, {"worker": worker.address, "pid": os.getpid()})
     logger = LOGGER.bind(job_id=job_id)
     context = Context(job_id=job_id, logger=logger)
     with context.session_maker() as session:
+        cads_broker.database.add_event(
+            event_type="worker_pid",
+            request_uid=job_id,
+            message=json.dumps({"worker": worker.address, "pid": os.getpid()}),
+            session=session,
+        )
         cads_broker.database.add_event(
             event_type="worker_name",
             request_uid=job_id,
