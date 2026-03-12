@@ -10,6 +10,7 @@ from typing import Any
 
 import cacholote
 import cads_adaptors
+import cads_broker.config
 import cads_broker.database
 import dask
 import dask.config
@@ -26,6 +27,8 @@ LOGGER = structlog.get_logger(__name__)
 LEVELS_MAPPING = logging.getLevelNamesMapping()
 
 DB_CONNECTION_RETRIES = int(os.getenv("WORKER_DB_CONNECTION_RETRIES", 3))
+
+BROKER_CONFIG = cads_broker.config.BrokerConfig()
 
 
 @functools.lru_cache
@@ -199,7 +202,9 @@ def submit_workflow(
     form: dict[str, Any] = {},
     metadata: dict[str, Any] = {},
 ):
-    job_id = distributed.worker.thread_state.key.removeprefix("request-")  # type: ignore
+    job_id = distributed.worker.thread_state.key.removeprefix(
+        f"{BROKER_CONFIG.broker_request_prefix}-"
+    )  # type: ignore
     # send event with worker address and pid of the job
     worker = get_worker()
     logger = LOGGER.bind(job_id=job_id)
