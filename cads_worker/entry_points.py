@@ -35,22 +35,21 @@ class CleanerKwargs(TypedDict):
 
 def _cache_cleaner() -> None:
     use_database = strtobool(os.environ.get("USE_DATABASE", "1"))
-    cleaner_kwargs = CleanerKwargs(
-        maxsize=int(os.environ.get("MAX_SIZE", 1_000_000_000)),
-        method=os.environ.get("METHOD", "LRU"),
-        delete_unknown_files=not use_database,
-        lock_validity_period=float(os.environ.get("LOCK_VALIDITY_PERIOD", 86400)),
-        use_database=use_database,
-        depth=int(os.getenv("CACHE_DEPTH", 2)),
-        batch_size=int(os.getenv("BATCH_SIZE", 0)) or None,
-        batch_delay=float(os.getenv("BATCH_DELAY", 0)),
-    )
-    for cache_files_urlpath in utils.parse_data_volumes_config():
-        cacholote.config.set(cache_files_urlpath=cache_files_urlpath)
+    data_volumes = utils.parse_data_volumes_config().volumes
+    for volume, volume_config in data_volumes.items():
+        cleaner_kwargs = CleanerKwargs(
+            maxsize=volume_config.max_size,
+            method=os.environ.get("METHOD", "LRU"),
+            delete_unknown_files=not use_database,
+            lock_validity_period=float(os.environ.get("LOCK_VALIDITY_PERIOD", 86400)),
+            use_database=use_database,
+            depth=int(os.getenv("CACHE_DEPTH", 2)),
+            batch_size=int(os.getenv("BATCH_SIZE", 0)) or None,
+            batch_delay=float(os.getenv("BATCH_DELAY", 0)),
+        )
+        cacholote.config.set(cache_files_urlpath=volume)
         LOGGER.info(
-            "Running cache cleaner",
-            cache_files_urlpath=cache_files_urlpath,
-            **cleaner_kwargs,
+            "Running cache cleaner", cache_files_urlpath=volume, **cleaner_kwargs
         )
         try:
             cacholote.clean_cache_files(**cleaner_kwargs)

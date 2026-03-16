@@ -4,17 +4,20 @@ import pathlib
 import tempfile
 from collections.abc import Iterator
 
+import yaml
 
-def parse_data_volumes_config(path: str | None = None) -> list[str]:
+from .models import DataVolumeConfig, DataVolumes
+
+
+def parse_data_volumes_config(path: str | None = None) -> DataVolumes:
     if path is None:
         path = os.environ["DATA_VOLUMES_CONFIG"]
 
-    data_volumes = []
-    with open(path) as fp:
-        for line in fp:
-            if data_volume := os.path.expandvars(line.rstrip("\n")):
-                data_volumes.append(data_volume)
-    return data_volumes
+    with open(path) as f:
+        raw_dict = yaml.safe_load(f)
+    return DataVolumes(
+        volumes={k: DataVolumeConfig(**(v or {})) for k, v in raw_dict.items()}
+    )
 
 
 @contextlib.contextmanager

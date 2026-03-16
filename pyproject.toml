@@ -20,6 +20,8 @@ dependencies = [
   "cads-broker@git+https://github.com/ecmwf-projects/cads-broker.git",
   "distributed",
   "fsspec",
+  "pydantic",
+  "pyyaml",
   "structlog",
   "typer"
 ]
@@ -46,8 +48,13 @@ strict = true
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
 module = [
-  "cads_adaptors.*"
+  "cads_adaptors.*",
+  "fsspec.*"
 ]
+
+[[tool.mypy.overrides]]
+ignore_errors = true
+module = "cads_worker.filesystems"
 
 [tool.ruff]
 # Same as Black.

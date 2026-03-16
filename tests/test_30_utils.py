@@ -11,15 +11,19 @@ def test_utils_parse_data_volumes_config(
     tmp_path: pathlib.Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("FOO", "foo")
-    monkeypatch.setenv("BAR", "bar")
-    monkeypatch.setenv("BAZ", "")
-    data_volumes_config = tmp_path / "data-volumes.config"
-    data_volumes_config.write_text("\n\n$FOO\n\n${BAR}\n\n$BAZ\n\n")
-    assert utils.parse_data_volumes_config(str(data_volumes_config)) == ["foo", "bar"]
+    monkeypatch.setenv("MAX_SIZE", "10")
+    data_volumes_config = tmp_path / "data-volumes.yaml"
+    data_volumes_config.write_text("\nfoo:\nbar:\n  weight: 0\n  max_size: 20\n")
 
-    monkeypatch.setenv("DATA_VOLUMES_CONFIG", str(data_volumes_config))
-    assert utils.parse_data_volumes_config(None) == ["foo", "bar"]
+    volumes = utils.parse_data_volumes_config(str(data_volumes_config))
+    assert volumes.model_dump() == {
+        "volumes": {
+            "foo": {"weight": 1, "max_size": 10},
+            "bar": {"weight": 0, "max_size": 20},
+        }
+    }
+
+    assert volumes.get_random_volume() == "foo"
 
 
 def test_utils_enter_tmp_working_dir() -> None:

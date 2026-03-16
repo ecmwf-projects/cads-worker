@@ -2,7 +2,6 @@ import datetime
 import functools
 import logging
 import os
-import random
 import socket
 import time
 from typing import Any
@@ -221,7 +220,8 @@ def submit_workflow(
 
     structlog.contextvars.bind_contextvars(event_type="DATASET_COMPUTE", job_id=job_id)
 
-    cache_files_urlpath = random.choice(utils.parse_data_volumes_config())
+    data_volumes = utils.parse_data_volumes_config()
+    cache_files_urlpath = data_volumes.get_random_volume()
     depth = int(os.getenv("CACHE_DEPTH", 1))
     if depth == 2:
         cache_files_urlpath = os.path.join(
