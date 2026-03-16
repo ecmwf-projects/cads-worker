@@ -16,7 +16,7 @@ import fsspec.implementations.local
 import structlog
 from distributed import get_worker
 
-from . import config, utils
+from . import config, models, utils
 
 config.configure_logger(os.getenv("WORKER_LOG_LEVEL", "NOT_SET").upper())
 
@@ -220,8 +220,8 @@ def submit_workflow(
 
     structlog.contextvars.bind_contextvars(event_type="DATASET_COMPUTE", job_id=job_id)
 
-    data_volumes = utils.parse_data_volumes_config()
-    cache_files_urlpath = data_volumes.get_random_volume()
+    volumes = models.DataVolumes.from_yaml()
+    cache_files_urlpath = volumes.get_random_volume()
     depth = int(os.getenv("CACHE_DEPTH", 1))
     if depth == 2:
         cache_files_urlpath = os.path.join(

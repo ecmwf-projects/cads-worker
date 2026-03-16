@@ -7,7 +7,7 @@ import structlog
 import typer
 from typer import Option
 
-from . import config, utils
+from . import config, models
 
 config.configure_logger()
 LOGGER = structlog.get_logger(__name__)
@@ -35,8 +35,8 @@ class CleanerKwargs(TypedDict):
 
 def _cache_cleaner() -> None:
     use_database = strtobool(os.environ.get("USE_DATABASE", "1"))
-    data_volumes = utils.parse_data_volumes_config().volumes
-    for volume, volume_config in data_volumes.items():
+    volumes = models.DataVolumes.from_yaml().volumes
+    for cache_files_urlpath, volume_config in volumes.items():
         cleaner_kwargs = CleanerKwargs(
             maxsize=volume_config.max_size,
             method=os.environ.get("METHOD", "LRU"),
@@ -47,9 +47,11 @@ def _cache_cleaner() -> None:
             batch_size=int(os.getenv("BATCH_SIZE", 0)) or None,
             batch_delay=float(os.getenv("BATCH_DELAY", 0)),
         )
-        cacholote.config.set(cache_files_urlpath=volume)
+        cacholote.config.set(cache_files_urlpath=cache_files_urlpath)
         LOGGER.info(
-            "Running cache cleaner", cache_files_urlpath=volume, **cleaner_kwargs
+            "Running cache cleaner",
+            cache_files_urlpath=cache_files_urlpath,
+            **cleaner_kwargs,
         )
         try:
             cacholote.clean_cache_files(**cleaner_kwargs)

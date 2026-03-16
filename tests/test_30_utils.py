@@ -2,28 +2,7 @@ import os
 import pathlib
 import tempfile
 
-import pytest
-
 from cads_worker import utils
-
-
-def test_utils_parse_data_volumes_config(
-    tmp_path: pathlib.Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("MAX_SIZE", "10")
-    data_volumes_config = tmp_path / "data-volumes.yaml"
-    data_volumes_config.write_text("\nfoo:\nbar:\n  weight: 0\n  max_size: 20\n")
-
-    volumes = utils.parse_data_volumes_config(str(data_volumes_config))
-    assert volumes.model_dump() == {
-        "volumes": {
-            "foo": {"weight": 1, "max_size": 10},
-            "bar": {"weight": 0, "max_size": 20},
-        }
-    }
-
-    assert volumes.get_random_volume() == "foo"
 
 
 def test_utils_enter_tmp_working_dir() -> None:

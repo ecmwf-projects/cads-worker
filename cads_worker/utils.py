@@ -4,21 +4,6 @@ import pathlib
 import tempfile
 from collections.abc import Iterator
 
-import yaml
-
-from .models import DataVolumeConfig, DataVolumes
-
-
-def parse_data_volumes_config(path: str | None = None) -> DataVolumes:
-    if path is None:
-        path = os.environ["DATA_VOLUMES_CONFIG"]
-
-    with open(path) as f:
-        raw_dict = yaml.safe_load(f)
-    return DataVolumes(
-        volumes={k: DataVolumeConfig(**(v or {})) for k, v in raw_dict.items()}
-    )
-
 
 @contextlib.contextmanager
 def enter_tmp_working_dir() -> Iterator[str]:
