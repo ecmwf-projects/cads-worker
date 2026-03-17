@@ -3,7 +3,7 @@ import random
 from typing import Self
 
 import yaml
-from pydantic import BaseModel, Field, NonNegativeInt
+from pydantic import BaseModel, Field, NonNegativeFloat, NonNegativeInt
 
 
 def get_env_max_size() -> int:
@@ -11,7 +11,7 @@ def get_env_max_size() -> int:
 
 
 class DataVolumeConfig(BaseModel):
-    weight: NonNegativeInt = 1
+    weight: NonNegativeFloat = 1
     max_size: NonNegativeInt = Field(default_factory=get_env_max_size)
 
 
@@ -19,10 +19,12 @@ class DataVolumes(BaseModel):
     volumes: dict[str, DataVolumeConfig]
 
     def get_random_volume(self) -> str:
-        choices = []
-        for volume, config in self.volumes.items():
-            choices.extend([volume] * config.weight)
-        return random.choice(choices)
+        (volume,) = random.choices(
+            list(self.volumes),
+            weights=[config.weight for config in self.volumes.values()],
+            k=1,
+        )
+        return volume
 
     @classmethod
     def from_yaml(cls, path: str | None = None) -> Self:
@@ -32,5 +34,8 @@ class DataVolumes(BaseModel):
         with open(path) as f:
             raw_dict = yaml.safe_load(f)
         return cls(
-            volumes={k: DataVolumeConfig(**(v or {})) for k, v in raw_dict.items()}
+            volumes={
+                k: DataVolumeConfig(**v) if v else DataVolumeConfig()
+                for k, v in raw_dict.items()
+            }
         )
