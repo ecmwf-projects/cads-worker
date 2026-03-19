@@ -3,9 +3,9 @@ import os
 from typing import Annotated, TypedDict
 
 import cacholote
+import cads_broker.object_storage
 import structlog
 import typer
-from cads_broker import object_storage
 from typer import Option
 
 from . import config, models
@@ -126,7 +126,7 @@ def _init_buckets() -> None:
     data_volumes = models.DataVolumes.from_yaml().volumes
     for data_volume in data_volumes:
         if data_volume.startswith("s3://"):
-            object_storage.create_data_volume(
+            cads_broker.object_storage.create_data_volume(
                 data_volume, object_storage_url, **storage_kws
             )
 
