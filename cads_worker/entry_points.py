@@ -123,12 +123,15 @@ def _init_buckets() -> None:
         "aws_access_key_id": os.environ["STORAGE_ADMIN"],
         "aws_secret_access_key": os.environ["STORAGE_PASSWORD"],
     }
+    LOGGER.info("Initializing buckets", object_storage_url=object_storage_url)
     data_volumes = models.DataVolumes.from_yaml().volumes
     for data_volume in data_volumes:
         if data_volume.startswith("s3://"):
+            LOGGER.info("Initializing bucket", data_volume=data_volume)
             cads_broker.object_storage.create_download_bucket(
                 data_volume, object_storage_url, **storage_kws
             )
+    LOGGER.info("Buckets initialized")
 
 
 def cache_cleaner() -> None:
