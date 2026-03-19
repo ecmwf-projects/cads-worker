@@ -126,7 +126,7 @@ def _init_buckets() -> None:
     data_volumes = models.DataVolumes.from_yaml().volumes
     for data_volume in data_volumes:
         if data_volume.startswith("s3://"):
-            cads_broker.object_storage.create_data_volume(
+            cads_broker.object_storage.create_download_bucket(
                 data_volume, object_storage_url, **storage_kws
             )
 
