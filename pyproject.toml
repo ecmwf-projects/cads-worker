@@ -38,6 +38,7 @@ cci2 = "cads_worker.filesystems:CCI2FileSystem"
 [project.scripts]
 cache-cleaner = "cads_worker.entry_points:cache_cleaner"
 expire-cache-entries = "cads_worker.entry_points:expire_cache_entries"
+init-buckets = "cads_worker.entry_points:init_buckets"
 
 [tool.coverage.run]
 branch = true

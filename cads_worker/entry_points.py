@@ -5,6 +5,7 @@ from typing import Annotated, TypedDict
 import cacholote
 import structlog
 import typer
+from cads_broker import object_storage
 from typer import Option
 
 from . import config, models
@@ -116,9 +117,27 @@ def _expire_cache_entries(
     return count
 
 
+def _init_buckets() -> None:
+    object_storage_url = os.environ["OBJECT_STORAGE_URL"]
+    storage_kws: dict[str, str] = {
+        "aws_access_key_id": os.environ["STORAGE_ADMIN"],
+        "aws_secret_access_key": os.environ["STORAGE_PASSWORD"],
+    }
+    data_volumes = models.DataVolumes.from_yaml().volumes
+    for data_volume in data_volumes:
+        if data_volume.startswith("s3://"):
+            object_storage.create_data_volume(
+                data_volume, object_storage_url, **storage_kws
+            )
+
+
 def cache_cleaner() -> None:
     typer.run(_cache_cleaner)
 
 
 def expire_cache_entries() -> None:
     typer.run(_expire_cache_entries)
+
+
+def init_buckets() -> None:
+    typer.run(_init_buckets)
