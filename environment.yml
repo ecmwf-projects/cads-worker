@@ -11,6 +11,8 @@ dependencies:
 - distributed
 - libnetcdf<4.9.3  # issues with libmambasolver and libxml2
 - psycopg2
+- pydantic
+- pyyaml
 # See: https://github.com/fsspec/s3fs/pull/910
 - s3fs!=2024.10.0
 - s3fs>=2023.12.2

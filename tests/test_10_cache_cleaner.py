@@ -26,8 +26,8 @@ def test_cache_cleaner(
     assert cached_path.exists()
 
     # create data nodes config
-    data_volumes_config = tmp_path / "data-volumes.config"
-    data_volumes_config.write_text(cache_files_urlpath)
+    data_volumes_config = tmp_path / "data-volumes.yaml"
+    data_volumes_config.write_text(f"{cache_files_urlpath}:")
     monkeypatch.setenv("DATA_VOLUMES_CONFIG", str(data_volumes_config))
 
     # clean cache

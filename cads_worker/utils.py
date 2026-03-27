@@ -5,18 +5,6 @@ import tempfile
 from collections.abc import Iterator
 
 
-def parse_data_volumes_config(path: str | None = None) -> list[str]:
-    if path is None:
-        path = os.environ["DATA_VOLUMES_CONFIG"]
-
-    data_volumes = []
-    with open(path) as fp:
-        for line in fp:
-            if data_volume := os.path.expandvars(line.rstrip("\n")):
-                data_volumes.append(data_volume)
-    return data_volumes
-
-
 @contextlib.contextmanager
 def enter_tmp_working_dir() -> Iterator[str]:
     old_cwd = os.getcwd()
