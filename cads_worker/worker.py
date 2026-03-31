@@ -2,7 +2,6 @@ import datetime
 import functools
 import logging
 import os
-import random
 import socket
 import time
 from typing import Any
@@ -13,10 +12,11 @@ import cads_broker.database
 import dask
 import dask.config
 import distributed.worker
+import fsspec.implementations.local
 import structlog
 from distributed import get_worker
 
-from . import config, utils
+from . import config, models, utils
 
 config.configure_logger(os.getenv("WORKER_LOG_LEVEL", "NOT_SET").upper())
 
@@ -220,7 +220,8 @@ def submit_workflow(
 
     structlog.contextvars.bind_contextvars(event_type="DATASET_COMPUTE", job_id=job_id)
 
-    cache_files_urlpath = random.choice(utils.parse_data_volumes_config())
+    volumes = models.DataVolumes.from_yaml()
+    cache_files_urlpath = volumes.get_random_volume()
     depth = int(os.getenv("CACHE_DEPTH", 1))
     if depth == 2:
         cache_files_urlpath = os.path.join(
@@ -244,7 +245,11 @@ def submit_workflow(
     adaptor_class = cads_adaptors.get_adaptor_class(entry_point, setup_code)
     try:
         with utils.enter_tmp_working_dir() as working_dir:
-            base_dir = dirname if "file" in fs.protocol else working_dir
+            base_dir = (
+                dirname
+                if isinstance(fs, fsspec.implementations.local.LocalFileSystem)
+                else working_dir
+            )
             with utils.make_cache_tmp_path(base_dir) as cache_tmp_path:
                 adaptor = adaptor_class(
                     form=form,
@@ -259,7 +264,7 @@ def submit_workflow(
         context.error(f"{err.__class__.__name__}: {str(err)}")
         raise
 
-    if "s3" in fs.protocol:
+    if result.counter == 1 and "s3" in fs.protocol:
         fs.chmod(result.result["args"][0]["file:local_path"], acl="public-read")
     with context.session_maker() as session:
         request = cads_broker.database.set_request_cache_id(
