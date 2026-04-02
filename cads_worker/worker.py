@@ -93,8 +93,8 @@ class Context(cacholote.config.Context):
 
     def _get_request_uid(self, job_id: str | None) -> str:
         if job_id is None:
-            job_id = self.job_id
-        assert job_id is not None
+            assert self.job_id is not None
+            return self.job_id
         return job_id
 
     def write(self, message: str) -> None:
