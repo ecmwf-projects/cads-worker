@@ -1,6 +1,6 @@
 import datetime
 import os
-from typing import Annotated, TypedDict
+from typing import Annotated, Literal, TypedDict
 
 import cacholote
 import cads_broker.object_storage
@@ -25,7 +25,7 @@ def strtobool(value: str) -> bool:
 
 class CleanerKwargs(TypedDict):
     maxsize: int
-    method: str
+    method: Literal["LRU", "LFU"]
     delete_unknown_files: bool
     lock_validity_period: float
     use_database: bool
@@ -34,13 +34,23 @@ class CleanerKwargs(TypedDict):
     batch_delay: float
 
 
+def _get_cache_method() -> Literal["LRU", "LFU"]:
+    match os.getenv("METHOD", "LRU"):
+        case "LRU":
+            return "LRU"
+        case "LFU":
+            return "LFU"
+        case method:
+            raise NotImplementedError(f"{method=}")
+
+
 def _cache_cleaner() -> None:
     use_database = strtobool(os.environ.get("USE_DATABASE", "1"))
     volumes = models.DataVolumes.from_yaml().volumes
     for cache_files_urlpath, volume_config in volumes.items():
         cleaner_kwargs = CleanerKwargs(
             maxsize=volume_config.max_size,
-            method=os.environ.get("METHOD", "LRU"),
+            method=_get_cache_method(),
             delete_unknown_files=not use_database,
             lock_validity_period=float(os.environ.get("LOCK_VALIDITY_PERIOD", 86400)),
             use_database=use_database,
