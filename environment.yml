@@ -16,6 +16,7 @@ dependencies:
 # See: https://github.com/fsspec/s3fs/pull/910
 - s3fs!=2024.10.0
 - s3fs>=2023.12.2
+- sqlalchemy
 - structlog
 - typer
 - zarr

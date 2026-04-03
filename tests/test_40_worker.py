@@ -1,19 +1,21 @@
+from typing import Any
 from unittest.mock import patch
 
 import pytest
+import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
 from cads_worker import worker
 
 
-def mock_session_maker():
+def mock_session_maker() -> Session:
     return Session()
 
 
-def test_ensure_session_decorator():
+def test_ensure_session_decorator() -> None:
     # Test case 1: when session is None
     @worker.ensure_session
-    def sample_function(self, session=None):
+    def sample_function(self: Any, session: None | Session = None) -> None | Session:
         assert isinstance(session, Session)
         return session
 
@@ -32,12 +34,12 @@ def test_ensure_session_decorator():
     mock_session.close()
 
 
-def test_ensure_session_decorator_nested():
+def test_ensure_session_decorator_nested() -> None:
     # Test nested function calls with session
     @worker.ensure_session
-    def outer_function(self, session=None):
+    def outer_function(self: Any, session: None | Session = None) -> None | Session:
         @worker.ensure_session
-        def inner_function(self, session=None):
+        def inner_function(self: Any, session: None | Session = None) -> None | Session:
             return session
 
         return inner_function(self=None, session=session)
@@ -50,10 +52,10 @@ def test_ensure_session_decorator_nested():
     result.close()
 
 
-def test_ensure_session_decorator_error():
+def test_ensure_session_decorator_error() -> None:
     # Test error handling
     @worker.ensure_session
-    def failing_function(self, session=None):
+    def failing_function(self: Any, session: None | Session = None) -> None:
         raise ValueError("Test error")
 
     with pytest.raises(ValueError):
@@ -63,36 +65,34 @@ def test_ensure_session_decorator_error():
 call_count = 1
 
 
-def test_ensure_session_retry():
+def test_ensure_session_retry() -> None:
     # Test retries
 
     context = worker.Context()
 
     @worker.ensure_session
-    def failing_function(self, session=None):
+    def failing_function(self: Any, session: None | Session = None) -> None:
         print("failing function called")
-        raise worker.cads_broker.database.sa.exc.OperationalError(
-            "Simulated DB error", None, None
-        )
+        raise sa.exc.OperationalError("Simulated DB error", None, Exception())
 
     with patch(
         "cads_worker.worker.create_session_maker", return_value=mock_session_maker
     ):
-        with pytest.raises(worker.cads_broker.database.sa.exc.OperationalError):
+        with pytest.raises(sa.exc.OperationalError):
             # This should raise after max retries
             failing_function(self=context)
 
     global call_count
 
     @worker.ensure_session
-    def successful_function(self, session=None):
+    def successful_function(
+        self: Any, session: None | Session = None
+    ) -> None | Session:
         global call_count
         if call_count < 3:
             print("failing function called - retries:", call_count)
             call_count += 1
-            raise worker.cads_broker.database.sa.exc.OperationalError(
-                "Simulated DB error", None, None
-            )
+            raise sa.exc.OperationalError("Simulated DB error", None, Exception())
         else:
             print("successful function called - retries:", call_count)
             return session
