@@ -12,7 +12,7 @@ def test_data_volumes_from_yaml(
     monkeypatch.setenv("MAX_SIZE", "10MiB")
     data_volumes_config = tmp_path / "data-volumes.yaml"
     data_volumes_config.write_text(
-        "\nfoo:\nbar:\n  weight: 0\n  max_size: 10Mb\nbaz:\n  weight: 0\n  max_size: 10\n"
+        "\nfoo:\nbar:\n  weight: 0\n  max_size: 10MB\nbaz:\n  weight: 0\n  max_size: 10\n"
     )
 
     volumes = DataVolumes.from_yaml(str(data_volumes_config))

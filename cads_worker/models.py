@@ -8,7 +8,7 @@ from pydantic import BaseModel, BeforeValidator, Field, NonNegativeFloat, NonNeg
 
 
 def get_env_max_size() -> int:
-    return dask.utils.parse_bytes(os.getenv("MAX_SIZE", "1Gb"))
+    return dask.utils.parse_bytes(os.getenv("MAX_SIZE", "1GB"))
 
 
 class DataVolumeConfig(BaseModel):
