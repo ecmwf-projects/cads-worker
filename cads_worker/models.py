@@ -18,10 +18,19 @@ class DataVolumeConfig(BaseModel):
 class DataVolumes(BaseModel):
     volumes: dict[str, DataVolumeConfig]
 
+    def filter_available_volumes(self) -> dict[str, DataVolumeConfig]:
+        available_volumes = {}
+        for volume in self.volumes:
+            root_dir = volume.split(":///")[-1].split("/")[0]
+            if volume.startswith("s3://") or os.path.ismount(root_dir):
+                available_volumes[volume] = self.volumes[volume]
+        return available_volumes
+
     def get_random_volume(self) -> str:
+        available_volumes = self.filter_available_volumes()
         (volume,) = random.choices(
-            list(self.volumes),
-            weights=[config.weight for config in self.volumes.values()],
+            list(available_volumes),
+            weights=[config.weight for config in available_volumes.values()],
             k=1,
         )
         return volume
