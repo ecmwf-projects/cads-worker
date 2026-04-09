@@ -1,5 +1,6 @@
 import os
 import random
+import urllib
 from typing import Self
 
 import structlog
@@ -24,8 +25,10 @@ class DataVolumes(BaseModel):
     def filter_available_volumes(self) -> dict[str, DataVolumeConfig]:
         available_volumes = {}
         for volume in self.volumes:
-            root_dir = volume.split(":///")[-1].split("/")[0]
-            if volume.startswith("s3://") or os.path.ismount(root_dir):
+            parsed = urllib.parse.urlparse(volume)
+            if parsed.scheme == "s3" or os.path.ismount(
+                f"/{parsed.path.split('/')[1]}"
+            ):
                 available_volumes[volume] = self.volumes[volume]
             elif self.volumes[volume].weight > 0:
                 LOGGER.warning(f"Volume {volume} is not available. Skipping it.")
