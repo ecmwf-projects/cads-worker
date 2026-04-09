@@ -1,23 +1,26 @@
 import os
 import random
 import urllib
-from typing import Self
+from typing import Annotated, Self
 
+import dask.utils
 import fsspec
 import structlog
 import yaml
-from pydantic import BaseModel, Field, NonNegativeFloat, NonNegativeInt
+from pydantic import BaseModel, BeforeValidator, Field, NonNegativeFloat, NonNegativeInt
 
 LOGGER = structlog.get_logger(__name__)
 
 
 def get_env_max_size() -> int:
-    return int(os.getenv("MAX_SIZE", "1_000_000_000"))
+    return dask.utils.parse_bytes(os.getenv("MAX_SIZE", "1GB"))
 
 
 class DataVolumeConfig(BaseModel):
     weight: NonNegativeFloat = 1
-    max_size: NonNegativeInt = Field(default_factory=get_env_max_size)
+    max_size: Annotated[NonNegativeInt, BeforeValidator(dask.utils.parse_bytes)] = (
+        Field(default_factory=get_env_max_size)
+    )
 
 
 class DataVolumes(BaseModel):
