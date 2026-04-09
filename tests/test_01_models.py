@@ -11,7 +11,9 @@ def test_data_volumes_from_yaml(
 ) -> None:
     monkeypatch.setenv("MAX_SIZE", "10")
     data_volumes_config = tmp_path / "data-volumes.yaml"
-    data_volumes_config.write_text("s3://foo:\ns3://bar:\n  weight: 0\n  max_size: 20\n")
+    data_volumes_config.write_text(
+        "s3://foo:\ns3://bar:\n  weight: 0\n  max_size: 20\n"
+    )
 
     volumes = DataVolumes.from_yaml(str(data_volumes_config))
     assert volumes.model_dump() == {
@@ -23,7 +25,9 @@ def test_data_volumes_from_yaml(
 
     assert volumes.get_random_volume() == "s3://foo"
 
-    data_volumes_config.write_text("s3://foo:\n  weight: 1\ncci1:///bar:\n  weight: 100_000\n")
+    data_volumes_config.write_text(
+        "s3://foo:\n  weight: 1\ncci1:///bar:\n  weight: 100_000\n"
+    )
 
     volumes = DataVolumes.from_yaml(str(data_volumes_config))
     assert volumes.model_dump() == {
