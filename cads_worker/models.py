@@ -3,6 +3,7 @@ import random
 import urllib
 from typing import Self
 
+import fsspec
 import structlog
 import yaml
 from pydantic import BaseModel, Field, NonNegativeFloat, NonNegativeInt
@@ -26,12 +27,15 @@ class DataVolumes(BaseModel):
         available_volumes = {}
         for volume in self.volumes:
             parsed = urllib.parse.urlparse(volume)
-            if parsed.scheme == "s3" or os.path.ismount(
-                f"/{parsed.path.split('/')[1]}"
+            fs = fsspec.filesystem(parsed.scheme)
+            if (
+                isinstance(fs, fsspec.implementations.local.LocalFileSystem)
+                and parsed.path.startswith("/")
+                and not os.path.ismount(f"/{parsed.path.split('/')[1]}")
             ):
-                available_volumes[volume] = self.volumes[volume]
-            elif self.volumes[volume].weight > 0:
                 LOGGER.warning(f"Volume {volume} is not available. Skipping it.")
+                continue
+            available_volumes[volume] = self.volumes[volume]
         return available_volumes
 
     def get_random_volume(self) -> str:
