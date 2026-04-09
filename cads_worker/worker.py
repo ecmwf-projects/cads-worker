@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 import datetime
 import functools
 import logging
 import os
 import socket
 import time
-from typing import Any
+from typing import Any, Callable, TypeVar, cast
 
 import cacholote
 import cads_adaptors
@@ -13,6 +15,7 @@ import dask
 import dask.config
 import distributed.worker
 import fsspec.implementations.local
+import sqlalchemy as sa
 import structlog
 from distributed import get_worker
 
@@ -25,16 +28,19 @@ LOGGER = structlog.get_logger(__name__)
 LEVELS_MAPPING = logging.getLevelNamesMapping()
 
 DB_CONNECTION_RETRIES = int(os.getenv("WORKER_DB_CONNECTION_RETRIES", 3))
+F = TypeVar("F", bound=Callable[..., Any])
 
 
 @functools.lru_cache
-def create_session_maker() -> cads_broker.database.sa.orm.sessionmaker:
+def create_session_maker() -> sa.orm.sessionmaker[Any]:
     return cads_broker.database.ensure_session_obj(None)
 
 
-def ensure_session(func):
+def ensure_session(func: F) -> F:
     @functools.wraps(func)
-    def wrapper(self, *args, session=None, **kwargs):
+    def wrapper(
+        self: Context, *args: Any, session: None | sa.orm.Session = None, **kwargs: Any
+    ) -> Any:
         retries = 1
         while retries <= DB_CONNECTION_RETRIES:
             try:
@@ -49,7 +55,7 @@ def ensure_session(func):
                 if close_session:
                     session.close()
                 return result
-            except cads_broker.database.sa.exc.OperationalError as e:
+            except sa.exc.OperationalError as e:
                 exception = e
                 retries += 1
                 self.logger.warning(
@@ -57,14 +63,15 @@ def ensure_session(func):
                     error=str(e),
                 )
                 # close the session anyway because it could be broken
-                session.close()
+                if session is not None:
+                    session.close()
                 session = None
-                time.sleep(os.getenv("WORKER_DB_CONNECTION_RETRY_SLEEP", 2))
+                time.sleep(float(os.getenv("WORKER_DB_CONNECTION_RETRY_SLEEP", 2)))
 
         self.logger.error("Max retries reached. Aborting operation.")
         raise exception
 
-    return wrapper
+    return cast(F, wrapper)
 
 
 class Context(cacholote.config.Context):
@@ -83,6 +90,12 @@ class Context(cacholote.config.Context):
         self.worker_log_level = LEVELS_MAPPING.get(
             os.getenv("WORKER_LOG_LEVEL", "false").upper(), 60
         )
+
+    def _get_request_uid(self, job_id: str | None) -> str:
+        if job_id is None:
+            assert self.job_id is not None
+            return self.job_id
+        return job_id
 
     def write(self, message: str) -> None:
         """Use the logger as a file-like object. Needed by tqdm progress bar."""
@@ -103,7 +116,7 @@ class Context(cacholote.config.Context):
     ) -> None:
         cads_broker.database.add_event(
             event_type="user_visible_log",
-            request_uid=self.job_id if job_id is None else job_id,
+            request_uid=self._get_request_uid(job_id),
             message=message,
             session=session,
         )
@@ -114,7 +127,7 @@ class Context(cacholote.config.Context):
     ) -> None:
         cads_broker.database.add_event(
             event_type="user_visible_error",
-            request_uid=self.job_id if job_id is None else job_id,
+            request_uid=self._get_request_uid(job_id),
             message=message,
             session=session,
         )
@@ -126,16 +139,15 @@ class Context(cacholote.config.Context):
         log_type: str = "INFO",
         session: Any = None,
         job_id: str | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
-        if job_id is None:
-            job_id = self.job_id
+        request_uid = self._get_request_uid(job_id)
         log_level = LEVELS_MAPPING.get(log_type, 10)
-        self.logger.log(log_level, message, job_id=job_id, **kwargs)
+        self.logger.log(log_level, message, job_id=request_uid, **kwargs)
         if log_level >= self.worker_log_level:
             cads_broker.database.add_event(
                 event_type=log_type,
-                request_uid=job_id,
+                request_uid=request_uid,
                 message=message,
                 session=session,
             )
@@ -147,47 +159,54 @@ class Context(cacholote.config.Context):
         log_type: str = "EXCEPTION",
         session: Any = None,
         job_id: str | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
-        if job_id is None:
-            job_id = self.job_id
+        request_uid = self._get_request_uid(job_id)
         log_level = LEVELS_MAPPING.get(log_type, 10)
-        self.logger.log(log_level, message, job_id=job_id, **kwargs)
+        self.logger.log(log_level, message, job_id=request_uid, **kwargs)
         if log_level >= self.worker_log_level:
             cads_broker.database.add_event(
                 event_type=log_type,
-                request_uid=job_id,
+                request_uid=request_uid,
                 message=message,
                 session=session,
             )
 
     @property
-    def session_maker(self) -> cads_broker.database.sa.orm.sessionmaker:
+    def session_maker(self) -> sa.orm.sessionmaker[Any]:
         return create_session_maker()
 
-    def upload_log(self, *args, **kwargs):
-        self.add_stdout(*args, log_type="upload", **kwargs)
+    def upload_log(self, *args: Any, **kwargs: Any) -> None:
+        kwargs["log_type"] = "upload"
+        self.add_stdout(*args, **kwargs)
 
-    def info(self, *args, **kwargs):
-        self.add_stdout(*args, log_type="INFO", **kwargs)
+    def info(self, *args: Any, **kwargs: Any) -> None:
+        kwargs["log_type"] = "INFO"
+        self.add_stdout(*args, **kwargs)
 
-    def debug(self, *args, **kwargs):
-        self.add_stdout(*args, log_type="DEBUG", **kwargs)
+    def debug(self, *args: Any, **kwargs: Any) -> None:
+        kwargs["log_type"] = "DEBUG"
+        self.add_stdout(*args, **kwargs)
 
-    def warn(self, *args, **kwargs):
-        self.add_stdout(*args, log_type="WARN", **kwargs)
+    def warn(self, *args: Any, **kwargs: Any) -> None:
+        kwargs["log_type"] = "WARN"
+        self.add_stdout(*args, **kwargs)
 
-    def warning(self, *args, **kwargs):
-        self.add_stdout(*args, log_type="WARNING", **kwargs)
+    def warning(self, *args: Any, **kwargs: Any) -> None:
+        kwargs["log_type"] = "WARNING"
+        self.add_stdout(*args, **kwargs)
 
-    def critical(self, *args, **kwargs):
-        self.add_stderr(*args, log_type="CRITICAL", **kwargs)
+    def critical(self, *args: Any, **kwargs: Any) -> None:
+        kwargs["log_type"] = "CRITICAL"
+        self.add_stderr(*args, **kwargs)
 
-    def error(self, *args, **kwargs):
-        self.add_stderr(*args, log_type="ERROR", **kwargs)
+    def error(self, *args: Any, **kwargs: Any) -> None:
+        kwargs["log_type"] = "ERROR"
+        self.add_stderr(*args, **kwargs)
 
-    def exception(self, *args, **kwargs):
-        self.add_stderr(*args, log_type="EXCEPTION", **kwargs)
+    def exception(self, *args: Any, **kwargs: Any) -> None:
+        kwargs["log_type"] = "EXCEPTION"
+        self.add_stderr(*args, **kwargs)
 
 
 def submit_workflow(
@@ -195,9 +214,9 @@ def submit_workflow(
     setup_code: str | None = None,
     request: dict[str, Any] = {},
     config: dict[str, Any] = {},
-    form: dict[str, Any] = {},
+    form: dict[str, Any] | sa.Column[Any] = {},
     metadata: dict[str, Any] = {},
-):
+) -> None:
     job_id = distributed.worker.thread_state.key  # type: ignore
     # send event with worker address and pid of the job
     worker = get_worker()
