@@ -2,8 +2,11 @@ import os
 import random
 from typing import Self
 
+import structlog
 import yaml
 from pydantic import BaseModel, Field, NonNegativeFloat, NonNegativeInt
+
+LOGGER = structlog.get_logger(__name__)
 
 
 def get_env_max_size() -> int:
@@ -24,6 +27,8 @@ class DataVolumes(BaseModel):
             root_dir = volume.split(":///")[-1].split("/")[0]
             if volume.startswith("s3://") or os.path.ismount(root_dir):
                 available_volumes[volume] = self.volumes[volume]
+            elif self.volumes[volume].weight > 0:
+                LOGGER.warning(f"Volume {volume} is not available. Skipping it.")
         return available_volumes
 
     def get_random_volume(self) -> str:
