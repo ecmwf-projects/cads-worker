@@ -38,4 +38,3 @@ def test_data_volumes_from_yaml(
     }
 
     assert volumes.get_random_volume() == "s3://foo"
-
