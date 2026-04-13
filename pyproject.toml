@@ -17,7 +17,11 @@ classifiers = [
 dependencies = [
   "cacholote",
   "cads-adaptors@git+https://github.com/ecmwf-projects/cads-adaptors.git",
+  "cads-broker@git+https://github.com/ecmwf-projects/cads-broker.git",
   "distributed",
+  "fsspec",
+  "pydantic",
+  "pyyaml",
   "structlog",
   "typer"
 ]
@@ -27,9 +31,14 @@ license = {file = "LICENSE"}
 name = "cads-worker"
 readme = "README.md"
 
+[project.entry-points."fsspec.specs"]
+cci1 = "cads_worker.filesystems:CCI1FileSystem"
+cci2 = "cads_worker.filesystems:CCI2FileSystem"
+
 [project.scripts]
 cache-cleaner = "cads_worker.entry_points:cache_cleaner"
 expire-cache-entries = "cads_worker.entry_points:expire_cache_entries"
+init-buckets = "cads_worker.entry_points:init_buckets"
 
 [tool.coverage.run]
 branch = true
@@ -40,8 +49,13 @@ strict = true
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
 module = [
-  "cads_adaptors.*"
+  "cads_adaptors.*",
+  "fsspec.*"
 ]
+
+[[tool.mypy.overrides]]
+ignore_errors = true
+module = "cads_worker.filesystems"
 
 [tool.ruff]
 # Same as Black.

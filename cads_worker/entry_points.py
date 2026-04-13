@@ -3,11 +3,12 @@ import os
 from typing import Annotated, TypedDict
 
 import cacholote
+import cads_broker.object_storage
 import structlog
 import typer
 from typer import Option
 
-from . import config, utils
+from . import config, models
 
 config.configure_logger()
 LOGGER = structlog.get_logger(__name__)
@@ -35,17 +36,18 @@ class CleanerKwargs(TypedDict):
 
 def _cache_cleaner() -> None:
     use_database = strtobool(os.environ.get("USE_DATABASE", "1"))
-    cleaner_kwargs = CleanerKwargs(
-        maxsize=int(os.environ.get("MAX_SIZE", 1_000_000_000)),
-        method=os.environ.get("METHOD", "LRU"),
-        delete_unknown_files=not use_database,
-        lock_validity_period=float(os.environ.get("LOCK_VALIDITY_PERIOD", 86400)),
-        use_database=use_database,
-        depth=int(os.getenv("CACHE_DEPTH", 2)),
-        batch_size=int(os.getenv("BATCH_SIZE", 0)) or None,
-        batch_delay=float(os.getenv("BATCH_DELAY", 0)),
-    )
-    for cache_files_urlpath in utils.parse_data_volumes_config():
+    volumes = models.DataVolumes.from_yaml().volumes
+    for cache_files_urlpath, volume_config in volumes.items():
+        cleaner_kwargs = CleanerKwargs(
+            maxsize=volume_config.max_size,
+            method=os.environ.get("METHOD", "LRU"),
+            delete_unknown_files=not use_database,
+            lock_validity_period=float(os.environ.get("LOCK_VALIDITY_PERIOD", 86400)),
+            use_database=use_database,
+            depth=int(os.getenv("CACHE_DEPTH", 2)),
+            batch_size=int(os.getenv("BATCH_SIZE", 0)) or None,
+            batch_delay=float(os.getenv("BATCH_DELAY", 0)),
+        )
         cacholote.config.set(cache_files_urlpath=cache_files_urlpath)
         LOGGER.info(
             "Running cache cleaner",
@@ -115,9 +117,30 @@ def _expire_cache_entries(
     return count
 
 
+def _init_buckets() -> None:
+    object_storage_url = os.environ["OBJECT_STORAGE_URL"]
+    storage_kws: dict[str, str] = {
+        "aws_access_key_id": os.environ["STORAGE_ADMIN"],
+        "aws_secret_access_key": os.environ["STORAGE_PASSWORD"],
+    }
+    LOGGER.info("Initializing buckets", object_storage_url=object_storage_url)
+    data_volumes = models.DataVolumes.from_yaml().volumes
+    for data_volume in data_volumes:
+        if data_volume.startswith("s3://"):
+            LOGGER.info("Initializing bucket", data_volume=data_volume)
+            cads_broker.object_storage.create_download_bucket(
+                data_volume, object_storage_url, **storage_kws
+            )
+    LOGGER.info("Buckets initialized")
+
+
 def cache_cleaner() -> None:
     typer.run(_cache_cleaner)
 
 
 def expire_cache_entries() -> None:
     typer.run(_expire_cache_entries)
+
+
+def init_buckets() -> None:
+    typer.run(_init_buckets)

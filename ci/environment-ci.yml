@@ -13,8 +13,10 @@ dependencies:
 - pytest-cov
 - sphinx
 - sphinx-autoapi
+- types-PyYAML
 # DO NOT EDIT ABOVE THIS LINE, ADD DEPENDENCIES BELOW
 - pip
 - pip:
   - git+https://github.com/ecmwf-projects/cacholote
   - git+https://github.com/ecmwf-projects/cads-adaptors
+  - git+https://github.com/ecmwf-projects/cads-broker
