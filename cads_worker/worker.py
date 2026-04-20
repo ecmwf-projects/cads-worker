@@ -96,11 +96,8 @@ class Context(cacholote.config.Context):
             os.getenv("WORKER_LOG_LEVEL", "false").upper(), 60
         )
 
-    def _get_request_uid(self, job_id: str | None) -> str:
-        if job_id is None:
-            assert self.job_id is not None
-            return self.job_id
-        return job_id
+    def _get_request_uid(self, job_id: str | None) -> str | None:
+        return self.job_id if job_id is None else job_id
 
     def write(self, message: str) -> None:
         """Use the logger as a file-like object. Needed by tqdm progress bar."""
