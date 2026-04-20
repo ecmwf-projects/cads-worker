@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime
 import functools
+import json
 import logging
 import os
 import socket
@@ -10,6 +11,7 @@ from typing import Any, Callable, TypeVar, cast
 
 import cacholote
 import cads_adaptors
+import cads_broker.config
 import cads_broker.database
 import dask
 import dask.config
@@ -30,10 +32,13 @@ LEVELS_MAPPING = logging.getLevelNamesMapping()
 DB_CONNECTION_RETRIES = int(os.getenv("WORKER_DB_CONNECTION_RETRIES", 3))
 F = TypeVar("F", bound=Callable[..., Any])
 
+BROKER_CONFIG = cads_broker.config.BrokerConfig()
+
 
 @functools.lru_cache
 def create_session_maker() -> sa.orm.sessionmaker[Any]:
-    return cads_broker.database.ensure_session_obj(None)
+    smaker: sa.orm.sessionmaker[Any] = cads_broker.database.ensure_session_obj(None)
+    return smaker
 
 
 def ensure_session(func: F) -> F:
@@ -217,13 +222,20 @@ def submit_workflow(
     form: dict[str, Any] | sa.Column[Any] = {},
     metadata: dict[str, Any] = {},
 ) -> None:
-    job_id = distributed.worker.thread_state.key  # type: ignore
+    job_id = distributed.worker.thread_state.key.removeprefix(  # type: ignore[attr-defined]
+        f"{BROKER_CONFIG.broker_request_prefix}-"
+    )
     # send event with worker address and pid of the job
     worker = get_worker()
-    worker.log_event(job_id, {"worker": worker.address, "pid": os.getpid()})
     logger = LOGGER.bind(job_id=job_id)
     context = Context(job_id=job_id, logger=logger)
     with context.session_maker() as session:
+        cads_broker.database.add_event(
+            event_type="worker_pid",
+            request_uid=job_id,
+            message=json.dumps({"worker": worker.address, "pid": os.getpid()}),
+            session=session,
+        )
         cads_broker.database.add_event(
             event_type="worker_name",
             request_uid=job_id,
