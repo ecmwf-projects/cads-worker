@@ -22,6 +22,7 @@ dependencies = [
   "fsspec",
   "pydantic",
   "pyyaml",
+  "sqlalchemy",
   "structlog",
   "typer"
 ]
@@ -50,6 +51,7 @@ strict = true
 ignore_missing_imports = true
 module = [
   "cads_adaptors.*",
+  "cads_broker.*",
   "fsspec.*"
 ]
 
