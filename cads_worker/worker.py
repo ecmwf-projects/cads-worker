@@ -218,9 +218,9 @@ def submit_workflow(
     config: dict[str, Any] = {},
     metadata: dict[str, Any] = {},
 ) -> None:
-    job_id = distributed.worker.thread_state.key.removeprefix(
+    job_id = distributed.worker.thread_state.key.removeprefix(  # type: ignore[attr-defined]
         f"{BROKER_CONFIG.broker_request_prefix}-"
-    )  # type: ignore[attr-defined]
+    )
     # send event with worker address and pid of the job
     worker = get_worker()
     logger = LOGGER.bind(job_id=job_id)
