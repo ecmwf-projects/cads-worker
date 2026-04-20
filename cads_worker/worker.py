@@ -219,7 +219,6 @@ def submit_workflow(
     setup_code: str | None = None,
     request: dict[str, Any] = {},
     config: dict[str, Any] = {},
-    form: dict[str, Any] | sa.Column[Any] = {},
     metadata: dict[str, Any] = {},
 ) -> None:
     job_id = distributed.worker.thread_state.key.removeprefix(  # type: ignore[attr-defined]
