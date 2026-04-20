@@ -19,7 +19,7 @@ dependencies = [
   "cads-adaptors@git+https://github.com/ecmwf-projects/cads-adaptors.git",
   "cads-broker@git+https://github.com/ecmwf-projects/cads-broker.git",
   "distributed",
-  "fsspec",
+  "fsspec>2026.3.0",
   "pydantic",
   "pyyaml",
   "structlog",
