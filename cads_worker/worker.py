@@ -96,9 +96,6 @@ class Context(cacholote.config.Context):
             os.getenv("WORKER_LOG_LEVEL", "false").upper(), 60
         )
 
-    def _get_request_uid(self, job_id: str | None) -> str | None:
-        return self.job_id if job_id is None else job_id
-
     def write(self, message: str) -> None:
         """Use the logger as a file-like object. Needed by tqdm progress bar."""
         self.messages_buffer += message + "\n"
@@ -118,7 +115,7 @@ class Context(cacholote.config.Context):
     ) -> None:
         cads_broker.database.add_event(
             event_type="user_visible_log",
-            request_uid=self._get_request_uid(job_id),
+            request_uid=self.job_id if job_id is None else job_id,
             message=message,
             session=session,
         )
@@ -129,7 +126,7 @@ class Context(cacholote.config.Context):
     ) -> None:
         cads_broker.database.add_event(
             event_type="user_visible_error",
-            request_uid=self._get_request_uid(job_id),
+            request_uid=self.job_id if job_id is None else job_id,
             message=message,
             session=session,
         )
@@ -143,13 +140,14 @@ class Context(cacholote.config.Context):
         job_id: str | None = None,
         **kwargs: Any,
     ) -> None:
-        request_uid = self._get_request_uid(job_id)
+        if job_id is None:
+            job_id = self.job_id
         log_level = LEVELS_MAPPING.get(log_type, 10)
-        self.logger.log(log_level, message, job_id=request_uid, **kwargs)
+        self.logger.log(log_level, message, job_id=job_id, **kwargs)
         if log_level >= self.worker_log_level:
             cads_broker.database.add_event(
                 event_type=log_type,
-                request_uid=request_uid,
+                request_uid=job_id,
                 message=message,
                 session=session,
             )
@@ -163,13 +161,14 @@ class Context(cacholote.config.Context):
         job_id: str | None = None,
         **kwargs: Any,
     ) -> None:
-        request_uid = self._get_request_uid(job_id)
+        if job_id is None:
+            job_id = self.job_id
         log_level = LEVELS_MAPPING.get(log_type, 10)
-        self.logger.log(log_level, message, job_id=request_uid, **kwargs)
+        self.logger.log(log_level, message, job_id=job_id, **kwargs)
         if log_level >= self.worker_log_level:
             cads_broker.database.add_event(
                 event_type=log_type,
-                request_uid=request_uid,
+                request_uid=job_id,
                 message=message,
                 session=session,
             )
